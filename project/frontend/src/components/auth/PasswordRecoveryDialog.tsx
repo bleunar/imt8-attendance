@@ -7,7 +7,6 @@ import { authService } from '@/services/authService';
 import {
     InputOTP,
     InputOTPGroup,
-    InputOTPSeparator,
     InputOTPSlot,
 } from "@/components/ui/input-otp"
 
