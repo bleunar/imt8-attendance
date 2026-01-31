@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
@@ -23,8 +24,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
     CheckCircle2,
-    Ban,
-    RefreshCcw,
     Trash2,
     Pencil,
     X
@@ -50,15 +49,39 @@ const getLocalYMD = (d: Date) => {
 };
 
 export default function AttendancePage() {
+    const [searchParams] = useSearchParams();
+    const urlStatus = searchParams.get('status') as 'active' | 'overdue' | 'completed' | 'invalidated' | 'all' | null;
+
     const [data, setData] = useState<ActivityListResponse | null>(null);
     const [loading, setLoading] = useState(true);
-    const [preset, setPreset] = useState<DatePreset>('today');
+    // If status is passed via URL, default to 'all' date range to show all matching records
+    const [preset, setPreset] = useState<DatePreset>(urlStatus ? 'all' : 'week');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-    const [filters, setFilters] = useState<any>({
-        page: 1,
-        page_size: 15,
-        date_from: getLocalYMD(new Date()),
-        date_to: getLocalYMD(new Date()),
+    const [statusFilter, setStatusFilter] = useState<'active' | 'overdue' | 'completed' | 'invalidated' | 'all'>(urlStatus || 'all');
+
+    // Calculate initial week range
+    const today = new Date();
+    const day = today.getDay(); // 0 (Sun) - 6 (Sat)
+    const diff = today.getDate() - day;
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(diff);
+
+    const [filters, setFilters] = useState<any>(() => {
+        // If status is passed via URL, don't filter by date to show all matching records
+        if (urlStatus) {
+            return {
+                page: 1,
+                page_size: 15,
+                date_from: undefined,
+                date_to: undefined,
+            };
+        }
+        return {
+            page: 1,
+            page_size: 15,
+            date_from: getLocalYMD(startOfWeek),
+            date_to: getLocalYMD(today),
+        };
     });
     const [rowSelection, setRowSelection] = useState({});
 
@@ -84,7 +107,6 @@ export default function AttendancePage() {
 
     const allSelectedActive = selectedRecords.length > 0 && selectedRecords.every(r => !r.time_out);
     const allSelectedCompleted = selectedRecords.length > 0 && selectedRecords.every(r => r.time_out && !r.invalidated_at);
-    const allSelectedInvalid = selectedRecords.length > 0 && selectedRecords.every(r => r.invalidated_at);
 
     // Bulk Handlers
     const handleBulkClose = async () => {
@@ -102,20 +124,7 @@ export default function AttendancePage() {
         }
     };
 
-    const handleBulkRevalidate = async () => {
-        if (!confirm(`Are you sure you want to revalidate ${selectedRecords.length} records?`)) return;
-        setBulkLoading(true);
-        try {
-            await attendanceService.bulkRevalidate(selectedIds);
-            toast.success('Records revalidated successfully');
-            setRowSelection({});
-            fetchActivities();
-        } catch (error) {
-            toast.error('Failed to revalidate records');
-        } finally {
-            setBulkLoading(false);
-        }
-    };
+
 
     const handleBulkDelete = async () => {
         setBulkLoading(true);
@@ -334,6 +343,19 @@ export default function AttendancePage() {
                                 </SelectContent>
                             </Select>
 
+                            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+                                <SelectTrigger className="w-[140px]">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="overdue">Overdue</SelectItem>
+                                    <SelectItem value="completed">Completed</SelectItem>
+                                    <SelectItem value="invalidated">Invalidated</SelectItem>
+                                </SelectContent>
+                            </Select>
+
                             {/* Specific Day Input */}
                             {preset === 'specific' && (
                                 <div className="space-y-1">
@@ -389,19 +411,46 @@ export default function AttendancePage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <DataTable
-                        columns={columns}
-                        data={data?.items || []}
-                        isLoading={loading}
-                        pagination={{
-                            currentPage: filters.page,
-                            totalPages: data?.total_pages || 1,
-                            onPageChange: (page) => setFilters((prev: any) => ({ ...prev, page }))
-                        }}
-                        rowSelection={rowSelection}
-                        onRowSelectionChange={setRowSelection}
-                        meta={{ refreshData: fetchActivities }}
-                    />
+                    {(() => {
+                        // Apply client-side status filtering
+                        const filterByStatus = (items: ActivityRecord[]) => {
+                            if (statusFilter === 'all') return items;
+                            return items.filter((activity) => {
+                                const isInvalid = !!activity.invalidated_at;
+                                const timeIn = new Date(activity.time_in!);
+                                const now = new Date();
+                                const isSameDay = timeIn.toDateString() === now.toDateString();
+                                const diffHours = (now.getTime() - timeIn.getTime()) / (1000 * 60 * 60);
+                                const isActive = !activity.time_out && isSameDay && diffHours < 24;
+                                const isOverdue = !activity.time_out && (!isSameDay || diffHours >= 24);
+                                const isCompleted = !!activity.time_out && !isInvalid;
+
+                                switch (statusFilter) {
+                                    case 'active': return isActive;
+                                    case 'overdue': return isOverdue;
+                                    case 'completed': return isCompleted;
+                                    case 'invalidated': return isInvalid;
+                                    default: return true;
+                                }
+                            });
+                        };
+                        const filteredItems = filterByStatus(data?.items || []);
+                        return (
+                            <DataTable
+                                columns={columns}
+                                data={filteredItems}
+                                isLoading={loading}
+                                pagination={{
+                                    currentPage: filters.page,
+                                    totalPages: data?.total_pages || 1,
+                                    onPageChange: (page) => setFilters((prev: any) => ({ ...prev, page }))
+                                }}
+                                rowSelection={rowSelection}
+                                onRowSelectionChange={setRowSelection}
+                                meta={{ refreshData: fetchActivities }}
+                            />
+                        );
+                    })()}
                 </CardContent>
             </Card>
 
@@ -425,19 +474,8 @@ export default function AttendancePage() {
                                 )}
 
                                 {allSelectedCompleted && (
-                                    <>
-                                        <Button size="sm" variant="outline" onClick={() => setIsBulkAdjustOpen(true)} disabled={bulkLoading}>
-                                            <Pencil className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Adjust Time</span>
-                                        </Button>
-                                        <Button size="sm" variant="destructive" onClick={() => setIsBulkInvalidateOpen(true)} disabled={bulkLoading}>
-                                            <Ban className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Invalidate</span>
-                                        </Button>
-                                    </>
-                                )}
-
-                                {allSelectedInvalid && (
-                                    <Button size="sm" onClick={handleBulkRevalidate} disabled={bulkLoading} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
-                                        <RefreshCcw className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Revalidate</span>
+                                    <Button size="sm" variant="outline" onClick={() => setIsBulkAdjustOpen(true)} disabled={bulkLoading}>
+                                        <Pencil className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Adjust Time</span>
                                     </Button>
                                 )}
 

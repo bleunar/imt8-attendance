@@ -37,7 +37,7 @@ const StatusCell = ({ row }: { row: any }) => {
     const [showDetails, setShowDetails] = useState(false)
     const activity = row.original;
     const isInvalid = !!activity.invalidated_at;
-    const isActive = !activity.time_out;
+
 
     const refreshData = () => {
         row.getAllCells()[0].getContext().table.options.meta?.refreshData?.();
@@ -72,10 +72,29 @@ const StatusCell = ({ row }: { row: any }) => {
         );
     }
 
+    const timeIn = new Date(activity.time_in);
+    const today = new Date();
+    const isSameDay = timeIn.toDateString() === today.toDateString();
+    const diffHours = (today.getTime() - timeIn.getTime()) / (1000 * 60 * 60);
+
+    // Active = No time out AND created today AND less than 24 hours (sanity check)
+    const isActive = !activity.time_out && isSameDay && diffHours < 24;
+
+    // Overdue = No time out AND (Different day OR > 24 hours)
+    const isOverdue = !activity.time_out && (!isSameDay || diffHours >= 24);
+
     if (isActive) {
         return (
             <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
                 Active
+            </Badge>
+        );
+    }
+
+    if (isOverdue) {
+        return (
+            <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50" title="The user may have forgot to time out, FIX THIS!">
+                Overdue
             </Badge>
         );
     }
@@ -142,12 +161,10 @@ const ActionCell = ({ row }: { row: any }) => {
                                 </DropdownMenuItem>
                             )}
 
-                            {!isActive && (
-                                <DropdownMenuItem onClick={() => setShowInvalidate(true)} className="text-orange-600 focus:text-orange-600 focus:bg-orange-50">
-                                    <Ban className="mr-2 h-4 w-4" />
-                                    Invalidate
-                                </DropdownMenuItem>
-                            )}
+                            <DropdownMenuItem onClick={() => setShowInvalidate(true)} className="text-orange-600 focus:text-orange-600 focus:bg-orange-50">
+                                <Ban className="mr-2 h-4 w-4" />
+                                Invalidate
+                            </DropdownMenuItem>
                         </>
                     )}
 
@@ -216,11 +233,11 @@ export const columns: ColumnDef<ActivityRecord>[] = [
         header: "Student",
         cell: ({ row }) => (
             <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8 border border-border">
-                        <AvatarFallback className="bg-muted text-muted-foreground">
-                            {(row.original.account_name || 'S').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
+                <Avatar className="h-8 w-8 border border-border">
+                    <AvatarFallback className="bg-muted text-muted-foreground">
+                        {(row.original.account_name || 'S').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                </Avatar>
                 <div className="flex flex-col">
                     <span className="font-medium">{row.original.account_name}</span>
                     <span className="text-xs text-muted-foreground font-mono">{row.original.school_id}</span>

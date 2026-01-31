@@ -105,6 +105,56 @@ export const accountService = {
         const response = await api.post<MessageResponse>('/accounts/maintenance/move-up');
         return response.data;
     },
+
+    // ========================================================================
+    // Profile Picture Methods
+    // ========================================================================
+
+    /**
+     * Upload profile picture for current user
+     * @param file - Image file to upload
+     * @param onProgress - Optional callback for upload progress (0-100)
+     */
+    async uploadProfilePicture(
+        file: File,
+        onProgress?: (percent: number) => void
+    ): Promise<{ message: string; profile_picture: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await api.post<{ message: string; profile_picture: string }>(
+            '/accounts/profile/picture',
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                onUploadProgress: (progressEvent) => {
+                    if (onProgress && progressEvent.total) {
+                        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        onProgress(percent);
+                    }
+                },
+            }
+        );
+        return response.data;
+    },
+
+    /**
+     * Remove current user's profile picture
+     */
+    async removeProfilePicture(): Promise<MessageResponse> {
+        const response = await api.delete<MessageResponse>('/accounts/profile/picture');
+        return response.data;
+    },
+
+    /**
+     * Remove a user's profile picture (admin/manager only)
+     */
+    async removeUserProfilePicture(accountId: number): Promise<MessageResponse> {
+        const response = await api.delete<MessageResponse>(`/accounts/${accountId}/picture`);
+        return response.data;
+    },
 };
 
 export default accountService;

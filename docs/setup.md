@@ -24,7 +24,6 @@ Before running the application, you need to configure the environment variables.
 ## Running the Application
 
 ### Method A: Docker Compose (Recommended)
-
 This method runs the entire stack (Frontend, Backend, Database, Redis) in containers.
 
 1.  Navigate to the `project` directory (where `docker-compose.yml` is located).
@@ -33,9 +32,14 @@ This method runs the entire stack (Frontend, Backend, Database, Redis) in contai
     docker-compose up -d --build
     ```
 3.  Access the application:
-    - **Frontend**: http://localhost
+    - **Frontend**: http://localhost (Served via Nginx with Gzip & Caching)
     - **Backend API**: http://localhost:8000
     - **API Documentation**: http://localhost:8000/docs
+
+**Note on Persistence**:
+The configuration now uses named volumes to prevent data loss:
+- `attendance_uploads`: Persists user profile pictures (`/app/uploads`).
+- `attendance_redis_data`: Persists session/cache data.
 
 To stop the services:
 ```bash

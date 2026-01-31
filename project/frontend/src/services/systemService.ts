@@ -7,14 +7,6 @@ import api from './api';
 export interface SystemStatus {
     email_service: string;
     database: string;
-    scheduler: {
-        status: string;
-        jobs: {
-            id: string;
-            name: string;
-            next_run: string | null;
-        }[];
-    };
     status: string;
 }
 

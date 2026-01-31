@@ -6,7 +6,7 @@ Provides CRUD operations for user accounts.
 
 import math
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, UploadFile, File
 from typing import Optional
 
 from models.accounts import (
@@ -17,11 +17,13 @@ from models.auth import MessageResponse
 from core.security import hash_password, verify_password
 from utilities.database import execute_query, execute_one, execute_insert, execute_update
 from utilities.dependencies import get_current_user, require_admin, require_admin_or_manager
+from utilities.storage import (
+    save_profile_picture, delete_profile_picture, get_profile_picture_url,
+    validate_image, MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES
+)
 
 
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
-
-
 
 
 
@@ -104,6 +106,10 @@ async def list_accounts(
         tuple(params) + (page_size, offset)
     )
     
+    # Add profile picture URL to each account
+    for acc in accounts:
+        acc["profile_picture"] = get_profile_picture_url(acc["id"])
+    
     return AccountListResponse(
         items=[AccountResponse(**acc) for acc in accounts],
         total=total,
@@ -134,6 +140,9 @@ async def get_profile(user: dict = Depends(get_current_user)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Account not found"
         )
+    
+    # Add profile picture URL
+    account["profile_picture"] = get_profile_picture_url(account["id"])
     
     return AccountResponse(**account)
 
@@ -246,6 +255,110 @@ async def update_password(
     return MessageResponse(message="Password updated successfully")
 
 
+# ============================================================================
+# Profile Picture Endpoints
+# ============================================================================
+
+@router.post("/profile/picture")
+async def upload_profile_picture(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Upload a profile picture for the current user.
+    
+    The image will be converted to WebP format and saved as {user_id}.webp.
+    Maximum file size: 5MB. Allowed types: JPEG, PNG, WebP, GIF.
+    """
+    # Validate content type
+    content_type = file.content_type or ""
+    if content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file type. Allowed: JPEG, PNG, WebP, GIF"
+        )
+    
+    # Read file content
+    file_bytes = await file.read()
+    
+    # Validate file size
+    if len(file_bytes) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File too large. Maximum size: 5MB"
+        )
+    
+    # Save profile picture
+    try:
+        picture_url = save_profile_picture(user["id"], file_bytes)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save profile picture: {str(e)}"
+        )
+    
+    return {
+        "message": "Profile picture uploaded successfully",
+        "profile_picture": picture_url
+    }
+
+
+@router.delete("/profile/picture")
+async def remove_own_profile_picture(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Remove the current user's profile picture.
+    """
+    deleted = delete_profile_picture(user["id"])
+    
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No profile picture found"
+        )
+    
+    return {"message": "Profile picture removed successfully"}
+
+
+@router.delete("/{account_id}/picture")
+async def remove_user_profile_picture(
+    account_id: int,
+    user: dict = Depends(require_admin_or_manager)
+):
+    """
+    Remove a user's profile picture (admin/manager only).
+    """
+    # Check if account exists
+    existing = await execute_one(
+        "SELECT id, role FROM accounts WHERE id = %s",
+        (account_id,)
+    )
+    
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Account not found"
+        )
+    
+    # Permission check for Managers
+    if user["role"] == "manager" and existing["role"] != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Managers can only manage Student accounts"
+        )
+    
+    deleted = delete_profile_picture(account_id)
+    
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No profile picture found for this user"
+        )
+    
+    return {"message": "Profile picture removed successfully"}
+
+
 @router.get("/{account_id}", response_model=AccountResponse)
 async def get_account(
     account_id: int,
@@ -272,6 +385,9 @@ async def get_account(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Account not found"
         )
+    
+    # Add profile picture URL
+    account["profile_picture"] = get_profile_picture_url(account_id)
     
     return AccountResponse(**account)
 

@@ -9,7 +9,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/com
 import { ActivityTable } from '@/components/dashboard/ActivityTable';
 import type { ActivityRecord } from '@/types';
 import logo from '@/assets/img/logo/logo.png';
-import Silk from '@/components/Silk';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -24,6 +23,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Screensaver } from '@/components/Screensaver';
+import { ProfilePicture } from '@/components/ProfilePicture';
 
 export default function TimeInOutPage() {
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
@@ -45,7 +45,12 @@ export default function TimeInOutPage() {
 
     const fetchActiveStudents = async () => {
         try {
-            const students = await attendanceService.getPublicActiveSessions();
+            // Get start of today in local time
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            const dateFrom = startOfToday.toISOString();
+
+            const students = await attendanceService.getPublicActiveSessions(dateFrom);
             setActiveStudents(students);
         } catch (error) {
             console.error('Failed to fetch active students', error);
@@ -85,11 +90,32 @@ export default function TimeInOutPage() {
         return () => clearInterval(timer);
     }, []);
 
+    // ...
+
     const processPunch = async (idToUse: string, force: boolean = false) => {
         setIsLoading(true);
         try {
             const response = await attendanceService.punch(idToUse, force);
-            toast.success(response.message);
+            toast.custom(() => (
+                <div className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 shadow-lg w-full max-w-md pointer-events-auto">
+                    <ProfilePicture
+                        src={response.profile_picture}
+                        firstName={response.student_name.split(' ')[0]}
+                        lastName={response.student_name.split(' ').slice(1).join(' ')}
+                        size="lg"
+                        shape="square"
+                    />
+                    <div className="flex flex-col">
+                        <h3 className="font-semibold text-nowrap text-lg text-capitalize text-slate-900 dark:text-white">
+                            {response.title}
+                        </h3>
+                        <p className="text-slate-600 text-nowrap dark:text-slate-300">
+                            {response.message}
+                        </p>
+                    </div>
+                </div>
+            ), { duration: 4000 });
+
             setSchoolId('');
             setPendingSchoolId('');
             refreshData();
@@ -130,18 +156,10 @@ export default function TimeInOutPage() {
     const nav = useNavigate();
 
     return (
-        <div className="h-screen bg-gradient-to-br from-[#31354A] via-black to-[#31354A] relative">
+        <div className="h-screen relative">
             <Screensaver />
 
-            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                <Silk
-                    speed={1}
-                    scale={0.3}
-                    color="#31354A"
-                    noiseIntensity={0}
-                    rotation={90}
-                />
-            </div>
+            {/* Background placeholder removed, handled by layout */}
 
             {/* Main Content */}
             <div className="flex flex-col items-center h-full p-6 relative z-10 w-full overflow-y-auto">
@@ -151,10 +169,10 @@ export default function TimeInOutPage() {
                         <SheetContent side="right" className="bg-slate-900 border-l border-slate-800 text-white w-full md:max-w-lg p-0 z-[100]">
                             <SheetHeader className="p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm">
                                 <SheetTitle className="text-white flex items-center gap-2">
-                                    Today's Activity
+                                    <span className=' opacity-0'>Gin ubra dya ni tonyo hehehehhehehe</span>
                                 </SheetTitle>
                             </SheetHeader>
-                            <div className="p-4 max-h-[90vh] flex flex-col scrollbar scrollbar-thumb-sky-500 scrollbar-track-sky-100">
+                            <div className="p-4 max-h-[89vh] flex flex-col scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-slate-600 transition-colors duration-300">
                                 <ActivityTable activities={todaysActivity} />
                             </div>
                             <SheetFooter className='pt-0 mt-0 hidden'>
@@ -182,17 +200,17 @@ export default function TimeInOutPage() {
                     </div>
 
                     {/* Branding */}
-                    <Card className="bg-slate-700/80 border-slate-700 backdrop-blur-md shadow-xl gap-y-2 animate-in fade-in duration-700">
+                    <Card className="bg-slate-700/80 border-none backdrop-blur-md shadow-xl gap-y-2 animate-in fade-in duration-700">
                         <CardContent className="flex flex-col md:flex-row items-center md:items-end justify-center md:justify-between">
-                            <div className="text-xl font-bold text-white tracking-widest tabular-nums">
+                            <div className="text-2xl font-bold text-white tracking-widest">
                                 {currentTime.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                             </div>
-                            <div className="text-slate-400 font-medium tracking-wide text-xs">
-                                {currentTime.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            <div className="text-slate-400 font-medium tracking-wide text-sm">
+                                {currentTime.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
                             </div>
                         </CardContent>
 
-                        <CardContent className='pt-0'>
+                        <CardContent className='pt-2'>
                             <form onSubmit={handleSubmit} className="space-y-4 mb-0">
                                 <Input
                                     ref={inputRef}
@@ -207,7 +225,7 @@ export default function TimeInOutPage() {
                                     disabled={isLoading}
                                     autoComplete="off"
                                 />
-                                <div className="flex justify-between items-center mt-0">
+                                <div className="flex justify-between items-center mt-0 pt-2">
                                     <div className="flex">
                                         <Button type='button' size="sm" variant='link' className="text-sm text-slate-500" onClick={() => nav("/login")}>
                                             Login
@@ -253,7 +271,7 @@ export default function TimeInOutPage() {
                         <div className="flex flex-wrap justify-center gap-2 max-h-32 px-[48px] ">
                             {(activeStudents.length > 0) && (
                                 activeStudents.map((name, i) => (
-                                    <div key={i} className="bg-slate-800/80 border border-slate-700 text-slate-300 px-3 py-1 rounded-full text-xs shadow-sm backdrop-blur-md flex items-center animate-in fade-in zoom-in duration-300 cursor-pointer capitalize">
+                                    <div key={i} className="bg-slate-800/80 border border-slate-700 text-slate-300 px-3 py-1 rounded-full text-xs shadow-sm backdrop-blur-md flex items-center animate-in fade-in zoom-in duration-300 cursor-pointer capitalize" onClick={() => setIsSheetOpen(true)}>
                                         <span className="w-1.5 h-1.5 inline-block bg-green-500 rounded-full mr-2 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
                                         {name}
                                     </div>

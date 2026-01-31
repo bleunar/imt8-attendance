@@ -10,11 +10,11 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from core.scheduler import start_scheduler, shutdown_scheduler
 from core.initialization import initialize_app
 from core.logging import setup_logging, get_logger
 from utilities.database import DatabasePool
-from endpoints import auth, accounts, jobs, attendance, performance, schedules, system, time_adjustments
+from utilities.limiter import setup_limiter
+from endpoints import auth, accounts, jobs, attendance, performance, system, time_adjustments, leaderboards
 
 # Setup logging
 setup_logging()
@@ -40,9 +40,6 @@ async def lifespan(app: FastAPI):
         if settings.ENVIRONMENT == "production":
             raise RuntimeError("Application initialization failed")
     
-    # Start Scheduler
-    start_scheduler()
-    
     logger.info("Application started successfully!")
     logger.info(f"API available at http://{settings.HOST}:{settings.PORT}")
     logger.info(f"API docs at http://{settings.HOST}:{settings.PORT}/docs")
@@ -51,7 +48,6 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down...")
-    shutdown_scheduler()
     await DatabasePool.close_pool()
     logger.info("Database pool closed")
 
@@ -65,6 +61,9 @@ app = FastAPI(
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
 )
+
+# Setup Rate Limiting
+setup_limiter(app)
 
 # Configure CORS
 app.add_middleware(
@@ -93,9 +92,17 @@ app.include_router(accounts.router)
 app.include_router(jobs.router)
 app.include_router(attendance.router)
 app.include_router(performance.router)
-app.include_router(schedules.router)
+app.include_router(leaderboards.router)
 app.include_router(system.router)
 app.include_router(time_adjustments.router)
+
+# Mount static files for uploads (profile pictures, etc.)
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
+uploads_dir = Path("uploads")
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.get("/")

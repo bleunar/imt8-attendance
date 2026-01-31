@@ -43,8 +43,12 @@ export const attendanceService = {
     /**
      * Get names of currently active students (public)
      */
-    async getPublicActiveSessions(): Promise<string[]> {
-        const response = await api.get<string[]>('/attendance/public/active');
+    async getPublicActiveSessions(dateFrom?: string): Promise<string[]> {
+        let url = '/attendance/public/active';
+        if (dateFrom) {
+            url += `?date_from=${dateFrom}`;
+        }
+        const response = await api.get<string[]>(url);
         return response.data;
     },
 
@@ -115,6 +119,11 @@ export const attendanceService = {
     async getActiveSessions(): Promise<ActivityRecord[]> {
         const response = await api.get<ActivityRecord[]>('/attendance/active');
         return response.data;
+    },
+
+    async getOverdueCount(): Promise<number> {
+        const response = await api.get<{ count: number }>('/attendance/overdue/count');
+        return response.data.count;
     },
 
     /**

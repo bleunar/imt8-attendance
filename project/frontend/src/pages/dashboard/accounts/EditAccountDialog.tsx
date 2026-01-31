@@ -177,12 +177,20 @@ export function EditAccountDialog({ account, open, onOpenChange, onSuccess }: Ed
                         )}
                     </div>
 
-                    {selectedRole === 'student' && (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-course">Course</Label>
-                                <Input id="edit-course" {...register('course')} placeholder="e.g. BSIT" />
-                            </div>
+                    {/* Course / Specialization & Year Level */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-course">
+                                {selectedRole === 'student' ? 'Course' : 'Specialization'}
+                            </Label>
+                            <Input
+                                id="edit-course"
+                                {...register('course')}
+                                placeholder={selectedRole === 'student' ? "e.g. BSIT" : "e.g. IT Department Head"}
+                            />
+                        </div>
+
+                        {selectedRole === 'student' && (
                             <div className="space-y-2">
                                 <Label>Year & Semester</Label>
                                 <div className="flex gap-2">
@@ -224,8 +232,8 @@ export function EditAccountDialog({ account, open, onOpenChange, onSuccess }: Ed
                                 <input type="hidden" {...register('year_level', { required: selectedRole === 'student', valueAsNumber: true })} />
                                 {errors.year_level && <span className="text-xs text-red-500">Year and Semester are required</span>}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">

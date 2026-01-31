@@ -6,10 +6,12 @@ Provides time in/out punch and activity log viewing.
 
 import math
 import json
-from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
 from typing import Optional
 
+from config import settings
 from models.attendance import (
     PunchRequest, PunchResponse, ActivityRecord, 
     ActivityListResponse, StudentSummary, AttendanceSummaryResponse,
@@ -17,6 +19,8 @@ from models.attendance import (
 )
 from utilities.database import execute_query, execute_one, execute_insert, execute_update
 from utilities.dependencies import require_admin_or_manager, get_current_user
+from utilities.storage import get_profile_picture_url
+from utilities.limiter import limiter
 
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
@@ -41,7 +45,8 @@ def ensure_activity_timezone(activity: dict) -> dict:
 
 
 @router.post("/punch", response_model=PunchResponse)
-async def punch(data: PunchRequest):
+@limiter.limit("32/minute")
+async def punch(request: Request, data: PunchRequest):
     """
     Time in/out punch using school ID.
     
@@ -64,7 +69,7 @@ async def punch(data: PunchRequest):
     if not account:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Account not found. Please check your School ID."
+            detail="Account not found. Double check your School ID, or contact the administrator."
         )
     
     if account.get("suspended_at"):
@@ -79,11 +84,13 @@ async def punch(data: PunchRequest):
         account_name = f"{account['role'].capitalize()} #{account['id']}"
     
     # Check for active session (time_in without time_out)
+    # We fetch the latest open session regardless of date first, then check date logic in Python
     active_session = await execute_one(
         """
         SELECT time_in
         FROM job_activity 
-        WHERE account_id = %s AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')
+        WHERE account_id = %s 
+          AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')
         ORDER BY time_in DESC
         LIMIT 1
         """,
@@ -91,6 +98,20 @@ async def punch(data: PunchRequest):
     )
     
     now = datetime.now(timezone.utc)
+    
+    # STRICT DAY CHECK:
+    # If active session exists, strict check if it belongs to "Today" in School Timezone.
+    # If it's from yesterday (even if < 24h ago in UTC), we force a NEW session.
+    if active_session:
+        tz = ZoneInfo(settings.TIMEZONE)
+        now_local = now.astimezone(tz)
+        session_time_local = active_session["time_in"].replace(tzinfo=timezone.utc).astimezone(tz)
+        
+        if session_time_local.date() != now_local.date():
+            # Session is from a previous day. Ignore it and treat as "No Active Session".
+            # This triggers the creation of a NEW activity below.
+            active_session = None
+
     
     if active_session:
         # Calculate duration
@@ -123,11 +144,16 @@ async def punch(data: PunchRequest):
             (now, now, *invalidation_values, account["id"])
         )
         
+        # Get profile picture URL
+        profile_picture = get_profile_picture_url(account["id"])
+
         return PunchResponse(
             status="time_out",
             timestamp=now,
-            message=f"Goodbye, {account_name}! Time out recorded.",
-            student_name=account_name
+            title=f"Goodbye, {account_name}",
+            message=f"Time out recorded",
+            student_name=account_name,
+            profile_picture=profile_picture
         )
     else:
         # Time in - create new session
@@ -166,35 +192,58 @@ async def punch(data: PunchRequest):
             (account["id"], now, properties, now, now)
         )
         
+        # Get profile picture URL
+        profile_picture = get_profile_picture_url(account["id"])
+        
         return PunchResponse(
             status="time_in",
             timestamp=now,
-            message=f"Hello, {account_name}! Time in recorded.",
-            student_name=account_name
+            title=f"Hello, {account_name}",
+            message=f"Time in recorded",
+            student_name=account_name,
+            profile_picture=profile_picture
         )
 
 
 @router.get("/public/active", response_model=list[str])
-async def get_public_active_sessions():
+@router.get("/public/active", response_model=list[str])
+@limiter.limit("32/minute")
+async def get_public_active_sessions(
+    request: Request,
+    date_from: Optional[datetime] = None
+):
     """
     Get list of names of currently active students.
     
     Public endpoint for kiosk display.
     """
+    # Determine time filter
+    time_condition = "DATE(ja.time_in) = UTC_DATE()"
+    params = []
+    
+    if date_from:
+        time_condition = "ja.time_in >= %s"
+        params.append(date_from)
+
     rows = await execute_query(
-        """
+        f"""
         SELECT DISTINCT CONCAT(COALESCE(a.first_name, ''), ' ', COALESCE(a.last_name, '')) as name
         FROM job_activity ja
         JOIN accounts a ON ja.account_id = a.id
         WHERE (ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00')
+          AND {time_condition}
         ORDER BY name
-        """
+        """,
+        tuple(params)
     )
     return [r["name"].strip() for r in rows if r["name"].strip()]
 
 
 @router.get("/public/today", response_model=list[ActivityRecord])
+@router.get("/public/today", response_model=list[ActivityRecord])
+@limiter.limit("32/minute")
 async def get_public_today_activity(
+    request: Request,
     date_from: Optional[datetime] = None
 ):
     """
@@ -227,7 +276,7 @@ async def get_public_today_activity(
                END as duration_minutes
         FROM job_activity ja
         JOIN accounts a ON ja.account_id = a.id
-        WHERE (ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00') OR {time_condition}
+        WHERE {time_condition}
         ORDER BY 
             (ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00') DESC, 
             CASE 
@@ -239,6 +288,10 @@ async def get_public_today_activity(
         """,
         tuple(params)
     )
+    
+    # Add profile picture URL to each activity
+    for activity in activities:
+        activity["account_profile_picture"] = get_profile_picture_url(activity["account_id"])
     
     return [ActivityRecord(**ensure_activity_timezone(a)) for a in activities]
 
@@ -279,7 +332,7 @@ async def list_activities(
     # If not, we show (Date Range OR Active)
     
     if active_only:
-        conditions.append("(ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00')")
+        conditions.append("(ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00') AND DATE(ja.time_in) = UTC_DATE()")
     else:
         # Build date condition group
         date_conditions = []
@@ -509,11 +562,35 @@ async def get_active_sessions(
         FROM job_activity ja
         JOIN accounts a ON ja.account_id = a.id
         WHERE (ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00')
+          AND DATE(ja.time_in) = UTC_DATE()
         ORDER BY ja.time_in DESC
         """
     )
     
     return [ActivityRecord(**ensure_activity_timezone(a)) for a in activities]
+
+
+@router.get("/overdue/count", response_model=dict)
+async def get_overdue_count(
+    user: dict = Depends(require_admin_or_manager)
+):
+    """
+    Get the count of overdue activities.
+    Overdue = Active (no time_out) AND started before today (UTC) AND not invalidated.
+    
+    Admin and Manager roles only.
+    """
+    result = await execute_one(
+        """
+        SELECT COUNT(*) as count
+        FROM job_activity
+        WHERE (time_out IS NULL OR time_out = '0000-00-00 00:00:00')
+          AND DATE(time_in) < UTC_DATE()
+          AND invalidated_at IS NULL
+        """
+    )
+    
+    return {"count": result["count"]}
 
 
 @router.put("/{activity_id}", response_model=ActivityRecord)
@@ -605,9 +682,9 @@ async def invalidate_activity(
     
     Admin and Manager roles only.
     """
-    # Check if activity exists
+    # Check if activity exists and get time_in/time_out
     activity = await execute_one(
-        "SELECT id FROM job_activity WHERE id = %s",
+        "SELECT id, time_in, time_out FROM job_activity WHERE id = %s",
         (activity_id,)
     )
     
@@ -618,14 +695,32 @@ async def invalidate_activity(
         )
         
     now = datetime.now(timezone.utc)
-    await execute_update(
-        """
-        UPDATE job_activity 
-        SET invalidated_at = %s, invalidation_notes = %s, updated_at = %s
-        WHERE id = %s
-        """,
-        (now, data.notes, now, activity_id)
+    
+    # If time_out is NULL or zero-date, auto-fill with time_in + 30 minutes
+    time_out_is_empty = (
+        activity["time_out"] is None or 
+        str(activity["time_out"]) == "0000-00-00 00:00:00"
     )
+    
+    if time_out_is_empty and activity["time_in"]:
+        auto_time_out = activity["time_in"] + timedelta(minutes=30)
+        await execute_update(
+            """
+            UPDATE job_activity 
+            SET invalidated_at = %s, invalidation_notes = %s, time_out = %s, updated_at = %s
+            WHERE id = %s
+            """,
+            (now, data.notes, auto_time_out, now, activity_id)
+        )
+    else:
+        await execute_update(
+            """
+            UPDATE job_activity 
+            SET invalidated_at = %s, invalidation_notes = %s, updated_at = %s
+            WHERE id = %s
+            """,
+            (now, data.notes, now, activity_id)
+        )
     
     # Fetch updated record
     updated_rec = await execute_one(
@@ -773,6 +868,7 @@ async def bulk_invalidate(
 ):
     """
     Invalidate multiple activities.
+    For activities without time_out, auto-set time_out = time_in + 30 minutes.
     """
     if not data.ids:
         return {"count": 0}
@@ -780,6 +876,18 @@ async def bulk_invalidate(
     now = datetime.now(timezone.utc)
     placeholders = ",".join(["%s"] * len(data.ids))
     
+    # First, update time_out for activities that don't have one (overdue)
+    await execute_update(
+        f"""
+        UPDATE job_activity 
+        SET time_out = DATE_ADD(time_in, INTERVAL 30 MINUTE), updated_at = %s
+        WHERE id IN ({placeholders})
+          AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')
+        """,
+        (now, *data.ids)
+    )
+    
+    # Then invalidate all specified activities
     await execute_update(
         f"""
         UPDATE job_activity 

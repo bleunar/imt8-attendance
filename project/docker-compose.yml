@@ -7,39 +7,45 @@ services:
     container_name: itm8_attendance_backend
     restart: always
     ports:
-      - "8000:8000"
+      - "8050:8000"
     env_file:
       - ./backend/.env
     networks:
       - itm8-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    volumes:
+      - attendance_uploads:/app/uploads
 
   itm8_attendance_redis:
     image: redis:alpine
     container_name: itm8_attendance_redis
     restart: always
-    ports:
-      - "6379:6379"
     networks:
       - itm8-network
+    volumes:
+      - attendance_redis_data:/data
 
   itm8_attendance_frontend:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+        - VITE_API_URL=${VITE_API_URL:-}
     env_file:
       - ./frontend/.env
     container_name: itm8_attendance_frontend
     restart: always
     ports:
-      - "8000:80"
+      - "8080:80"
     depends_on:
       - itm8_attendance_backend
     networks:
       - itm8-network
+    volumes:
+      - attendance_uploads:/usr/share/nginx/html/uploads
 
 networks:
   itm8-network:
     driver: bridge
+
+volumes:
+  attendance_uploads:
+  attendance_redis_data:

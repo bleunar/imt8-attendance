@@ -3,9 +3,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 
 // CONFIGURATION
-const INACTIVITY_TIMEOUT_MS = 10000; // 1 minute
+const INACTIVITY_TIMEOUT_MS = 6000; // 1 minute
 const ANIMATION_SPEED = 0.5; // Pixels per frame
-const COMPONENT_WIDTH = 360; // Approx width of the card
+const COMPONENT_WIDTH = 280; // Approx width of the card
 const COMPONENT_HEIGHT = 120; // Approx height with padding
 
 export function Screensaver() {
@@ -133,11 +133,11 @@ export function Screensaver() {
             >
                 <Card className="bg-slate-700/90 border-slate-700 shadow-xl backdrop-blur-xl rounded-sm h-full w-full">
                     <CardContent className="flex flex-col items-center justify-center py-4 h-full w-full">
-                        <div className="text-2xl font-bold text-white tracking-widest tabular-nums leading-none">
+                        <div className="text-3xl font-bold text-muted tracking-widest tabular-nums leading-none">
                             {currentTime.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit' })}
                         </div>
-                        <div className="text-slate-400 font-medium mt-0 tracking-wide text-sm font-mono">
-                            {currentTime.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+                        <div className="text-muted/67 font-medium mt-1 tracking-wide text-md font-mono">
+                            {currentTime.toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'long' })}
                         </div>
                     </CardContent>
                 </Card>

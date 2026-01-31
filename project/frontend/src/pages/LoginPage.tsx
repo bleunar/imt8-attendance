@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PasswordRecoveryDialog } from '@/components/auth/PasswordRecoveryDialog';
 import logo from '@/assets/img/logo/logo.png';
 import { Eye, EyeOff } from 'lucide-react';
-import Silk from '@/components/Silk';
+
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -48,22 +48,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#31354A] via-black to-[#31354A] flex items-center justify-center p-4">
-            {/* Background decoration */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                <Silk
-                    speed={1}
-                    scale={0.3}
-                    color="#31354A"
-                    noiseIntensity={0}
-                    rotation={90}
-                />
-            </div>
-
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
-            </div>
+        <div className="min-h-screen flex items-center justify-center p-4 relative z-10 w-full">
 
             <div className="relative w-full max-w-md">
                 <div className="flex flex-col items-center justify-center text-center mb-8 animate-in fade-in duration-500">
@@ -75,7 +60,7 @@ export default function LoginPage() {
                 </div>
 
 
-                <Card className="bg-slate-700/50 border-slate-700 backdrop-blur-sm animate-in fade-in duration-700">
+                <Card className="bg-slate-700/80 border-none shadow-xl backdrop-blur-sm animate-in fade-in duration-700">
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {error && (
@@ -131,19 +116,9 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
-
-                            <div className="text-end mb-8">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsRecoveryOpen(true)}
-                                    className="text-sm text-slate-400 hover:text-slate-300 transition-colors"
-                                >
-                                    Forgot your password?
-                                </button>
-                            </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between pt-2">
                                 <Button type='button' size="sm" variant='link' className="text-sm text-slate-500" onClick={() => navigate("/")}>
-                                    Time In/Out
+                                    Time In / Out
                                 </Button>
 
                                 <Button
@@ -164,11 +139,47 @@ export default function LoginPage() {
                                     )}
                                 </Button>
                             </div>
-
                         </form>
                     </CardContent>
                 </Card>
+
+                <div className="mt-8">
+
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            onClick={() => setIsRecoveryOpen(true)}
+                            className="text-sm text-muted-foreground hover:text-slate-300 transition-colors"
+                        >
+                            Forgot your password?
+                        </button>
+                    </div>
+                </div>
             </div>
+
+            <div className="absolute bottom-12 md:bottom-6 left-0 w-full px-6 z-20 animate-in fade-in duration-1200">
+                <div className="flex flex-col items-end z-[500]">
+                    <div className="flex items-center gap-1 text-muted/30">
+                        <div className="text-xs">ITSD</div>
+                        {/* <AtSign className='h-3 w-3' /> */}
+                        <div className="text-xs">{new Date().getFullYear()}</div>
+                    </div>
+                    <div className="flex items-center gap-1 text-muted/30">
+                        <div className="text-xs gap-1 flex">
+                            Developed by
+                            <a
+                                href="https://www.youtube.com/watch?v=kRpODt0rflA"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="hover:underline"
+                            >
+                                Toni Ross Arabit
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
             <PasswordRecoveryDialog open={isRecoveryOpen} onOpenChange={setIsRecoveryOpen} />
         </div>

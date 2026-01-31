@@ -24,6 +24,7 @@ from config import settings
 
 
 from utilities.otp import get_otp_service
+from utilities.limiter import limiter
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -32,7 +33,8 @@ otp_service = get_otp_service()
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(request: LoginRequest, response: Response):
+@limiter.limit("8/minute")
+async def login(request: Request, response: Response, data: LoginRequest):
     """
     Authenticate user and return access token.
     
@@ -46,7 +48,7 @@ async def login(request: LoginRequest, response: Response):
         FROM accounts 
         WHERE email = %s OR school_id = %s
         """,
-        (request.identifier, request.identifier)
+        (data.identifier, data.identifier)
     )
     
     if not user:
@@ -63,7 +65,7 @@ async def login(request: LoginRequest, response: Response):
         )
     
     # Verify password
-    if not verify_password(request.password, user["password_hash"]):
+    if not verify_password(data.password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
@@ -87,7 +89,8 @@ async def login(request: LoginRequest, response: Response):
 
 
 @router.post("/logout", response_model=MessageResponse)
-async def logout(response: Response, user: dict = Depends(get_current_user)):
+@limiter.limit("20/minute")
+async def logout(request: Request, response: Response, user: dict = Depends(get_current_user)):
     """
     Logout user by clearing refresh token cookie.
     """
@@ -96,6 +99,7 @@ async def logout(response: Response, user: dict = Depends(get_current_user)):
 
 
 @router.post("/refresh", response_model=RefreshResponse)
+@limiter.limit("24/minute")
 async def refresh_token(request: Request, response: Response):
     """
     Refresh access token using refresh token cookie.
@@ -149,10 +153,8 @@ async def refresh_token(request: Request, response: Response):
         role=user["role"],
         email=user["email"]
     )
-    new_refresh_token = create_refresh_token(user_id=user["id"])
-    
-    # Set new refresh token cookie
-    set_refresh_cookie(response, new_refresh_token)
+    # Note: We do NOT issue a new refresh token here.
+    # This enforces a hard session limit based on the original refresh token expiry (1 hour).
     
     return RefreshResponse(
         access_token=access_token,
@@ -161,7 +163,8 @@ async def refresh_token(request: Request, response: Response):
 
 
 @router.post("/recovery/request", response_model=MessageResponse)
-async def request_recovery(request: RecoveryRequest):
+@limiter.limit("3/minute")
+async def request_recovery(request: Request, data: RecoveryRequest):
     """
     Request password recovery OTP via email.
     """
@@ -172,7 +175,7 @@ async def request_recovery(request: RecoveryRequest):
         FROM accounts 
         WHERE email = %s
         """,
-        (request.email,)
+        (data.email,)
     )
     
     # Always return success to prevent email enumeration
@@ -185,7 +188,7 @@ async def request_recovery(request: RecoveryRequest):
     otp = generate_otp(6)
     
     # Store OTP with 10 minute expiration
-    otp_service.set_otp(request.email, otp, expiry_seconds=600)
+    otp_service.set_otp(data.email, otp, expiry_seconds=600)
     
     # Get user name
     name = user.get("first_name") or "User"
@@ -194,7 +197,7 @@ async def request_recovery(request: RecoveryRequest):
     
     # Send recovery email
     await EmailService.send_recovery_email(
-        to=request.email,
+        to=data.email,
         otp=otp,
         name=name
     )
@@ -205,12 +208,13 @@ async def request_recovery(request: RecoveryRequest):
 
 
 @router.post("/recovery/verify", response_model=MessageResponse)
-async def verify_recovery(request: RecoveryVerify):
+@limiter.limit("3/minute")
+async def verify_recovery(request: Request, data: RecoveryVerify):
     """
     Verify OTP and reset password.
     """
     # Get stored OTP
-    stored_otp = otp_service.get_otp(request.email)
+    stored_otp = otp_service.get_otp(data.email)
     
     if not stored_otp:
         raise HTTPException(
@@ -219,21 +223,21 @@ async def verify_recovery(request: RecoveryVerify):
         )
     
     # Verify OTP
-    if stored_otp != request.otp:
+    if stored_otp != data.otp:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid OTP"
         )
     
     # Update password
-    password_hash = hash_password(request.new_password)
+    password_hash = hash_password(data.new_password)
     rows_updated = await execute_update(
         """
         UPDATE accounts 
         SET password_hash = %s, password_last_updated = NOW()
         WHERE email = %s
         """,
-        (password_hash, request.email)
+        (password_hash, data.email)
     )
     
     if rows_updated == 0:
@@ -244,7 +248,7 @@ async def verify_recovery(request: RecoveryVerify):
     
     # Clear OTP
     # Clear OTP
-    otp_service.delete_otp(request.email)
+    otp_service.delete_otp(data.email)
     
     return MessageResponse(
         message="Password has been reset successfully. Please login with your new password."

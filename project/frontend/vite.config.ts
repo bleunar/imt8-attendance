@@ -25,6 +25,7 @@ export default defineConfig({
       '/time-adjustments': { target: 'http://localhost:8000', changeOrigin: true, secure: false },
       '/health': { target: 'http://localhost:8000', changeOrigin: true, secure: false },
       '/system': { target: 'http://localhost:8000', changeOrigin: true, secure: false },
+      '/uploads': { target: 'http://localhost:8000', changeOrigin: true, secure: false },
     }
   }
 })

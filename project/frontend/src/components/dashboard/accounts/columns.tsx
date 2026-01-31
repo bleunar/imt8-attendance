@@ -4,7 +4,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ProfilePicture } from "@/components/ProfilePicture"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,26 +12,30 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Pencil, Key, Briefcase, RefreshCw, Ban, Trash2 } from "lucide-react"
+import { MoreHorizontal, User as UserIcon, Pencil, Key, Briefcase, RefreshCw, Ban, Trash2, ImageOff } from "lucide-react"
 import type { User } from "@/types"
 
 interface GetColumnsProps {
+    onViewProfile: (user: User) => void
     onEdit: (user: User) => void
     onPassword: (user: User) => void
     onJob: (user: User) => void
     onSuspend: (user: User) => void
     onRestore: (user: User) => void
     onDelete: (user: User) => void
+    onRemovePicture: (user: User) => void
     currentUser: User | null
 }
 
 export const getColumns = ({
+    onViewProfile,
     onEdit,
     onPassword,
     onJob,
     onSuspend,
     onRestore,
     onDelete,
+    onRemovePicture,
     currentUser,
 }: GetColumnsProps): ColumnDef<User>[] => {
 
@@ -49,15 +53,15 @@ export const getColumns = ({
             header: "Name",
             cell: ({ row }) => {
                 const user = row.original
-                const initials = `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase()
 
                 return (
                     <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9 border border-border">
-                            <AvatarFallback className="bg-muted text-muted-foreground">
-                                {initials}
-                            </AvatarFallback>
-                        </Avatar>
+                        <ProfilePicture
+                            src={user.profile_picture}
+                            firstName={user.first_name}
+                            lastName={user.last_name}
+                            size="sm"
+                        />
                         <div className="flex flex-col">
                             <span className="font-medium">{user.first_name} {user.last_name}</span>
                             <span className="text-xs text-muted-foreground">{user.email}</span>
@@ -88,7 +92,7 @@ export const getColumns = ({
             }
         },
         {
-            header: "Department / Course",
+            header: "Course & Specialization",
             cell: ({ row }) => {
                 const { role, department, course, year_level } = row.original
 
@@ -113,7 +117,15 @@ export const getColumns = ({
                 }
 
                 // For admin/manager
-                return department || '-'
+                return (
+
+                        <div className="flex flex-col">
+                            <span className="capitalize">{department ? department : ""}</span>
+                            <span className="capitalize text-xs text-muted-foreground">{course ? course : ""}</span>
+                        </div>
+                )
+                
+                department || '-'
             }
         },
         {
@@ -149,6 +161,10 @@ export const getColumns = ({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onViewProfile(user)}>
+                                <UserIcon className="mr-2 h-4 w-4" /> View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onEdit(user)}>
                                 <Pencil className="mr-2 h-4 w-4" /> Edit Details
                             </DropdownMenuItem>
@@ -162,6 +178,11 @@ export const getColumns = ({
                                 </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
+                            {user.profile_picture && (
+                                <DropdownMenuItem onClick={() => onRemovePicture(user)} className="text-orange-600">
+                                    <ImageOff className="mr-2 h-4 w-4" /> Remove Profile Picture
+                                </DropdownMenuItem>
+                            )}
                             {user.suspended_at ? (
                                 <DropdownMenuItem onClick={() => onRestore(user)}>
                                     <RefreshCw className="mr-2 h-4 w-4" /> Restore Account

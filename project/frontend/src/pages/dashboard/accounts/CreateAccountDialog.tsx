@@ -77,6 +77,7 @@ export function CreateAccountDialog({ open, onOpenChange, onSuccess }: CreateAcc
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 pb-0">
+                    <div className="text-xl font-semibold border-b pb-1 text-start">User Information</div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
@@ -95,27 +96,32 @@ export function CreateAccountDialog({ open, onOpenChange, onSuccess }: CreateAcc
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="school_id">School ID {selectedRole === 'student' && '*'}</Label>
-                        <Input
-                            id="school_id"
-                            {...register('school_id', { required: selectedRole === 'student' })}
-                            placeholder="Required for students"
-                        />
-                        {errors.school_id && <span className="text-xs text-red-500">School ID is required for students</span>}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="school_id">School ID {selectedRole === 'student' && '*'}</Label>
+                            <Input
+                                id="school_id"
+                                {...register('school_id', { required: selectedRole === 'student' })}
+                                placeholder="Required for students"
+                            />
+                            {errors.school_id && <span className="text-xs text-red-500">School ID is required for students</span>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email *</Label>
+                            <Input id="email" type="email" {...register('email', { required: true })} />
+                            {errors.email && <span className="text-xs text-red-500">Required</span>}
+                        </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email *</Label>
-                        <Input id="email" type="email" {...register('email', { required: true })} />
-                        {errors.email && <span className="text-xs text-red-500">Required</span>}
-                    </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="password">Password *</Label>
                         <Input id="password" type="password" {...register('password', { required: true, minLength: 6 })} />
                         {errors.password && <span className="text-xs text-red-500">Required (min 6 chars)</span>}
                     </div>
+
+                    <div className="text-xl font-semibold mt-8 border-b pb-1 text-start">Roles and Specialization</div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -125,7 +131,7 @@ export function CreateAccountDialog({ open, onOpenChange, onSuccess }: CreateAcc
                                 onValueChange={(value) => setValue('role', value as any)}
                                 defaultValue={isAdmin ? 'student' : 'student'}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className='w-full'>
                                     <SelectValue placeholder="Select role" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -136,11 +142,25 @@ export function CreateAccountDialog({ open, onOpenChange, onSuccess }: CreateAcc
                             </Select>
                         </div>
 
+                        <div className="space-y-2">
+                            <Label htmlFor="gender">Gender</Label>
+                            <Select onValueChange={(value) => setValue('gender', value)}>
+                                <SelectTrigger className='w-full'>
+                                    <SelectValue placeholder="Select gender" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Male">Male</SelectItem>
+                                    <SelectItem value="Female">Female</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         {selectedRole !== 'student' && (
                             <div className="space-y-2">
                                 <Label htmlFor="department">Department {selectedRole === 'manager' && '*'}</Label>
                                 <Select onValueChange={(value) => setValue('department', value)}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className='w-full'>
                                         <SelectValue placeholder="Select department" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -155,14 +175,21 @@ export function CreateAccountDialog({ open, onOpenChange, onSuccess }: CreateAcc
                                 {errors.department && <span className="text-xs text-red-500">Department is required for managers</span>}
                             </div>
                         )}
-                    </div>
 
-                    {selectedRole === 'student' && (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="course">Course</Label>
-                                <Input id="course" {...register('course')} placeholder="e.g. BSIT" />
-                            </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="course">
+                                {selectedRole === 'student' ? 'Course' : 'Specialization'}
+                            </Label>
+                            <Input
+                                id="course"
+                                {...register('course')}
+                                placeholder={selectedRole === 'student' ? "e.g. BSIT" : "e.g. IT Department Head"}
+                            />
+                        </div>
+
+
+                        {selectedRole === 'student' && (
                             <div className="space-y-2">
                                 <Label>Year & Semester</Label>
                                 <div className="flex gap-2">
@@ -198,23 +225,7 @@ export function CreateAccountDialog({ open, onOpenChange, onSuccess }: CreateAcc
                                 <input type="hidden" {...register('year_level', { required: selectedRole === 'student', valueAsNumber: true })} />
                                 {errors.year_level && <span className="text-xs text-red-500">Year and Semester are required</span>}
                             </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="gender">Gender</Label>
-                            <Select onValueChange={(value) => setValue('gender', value)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select gender" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Male">Male</SelectItem>
-                                    <SelectItem value="Female">Female</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        )}
                     </div>
 
                     <div className="flex justify-end space-x-2 pt-4">

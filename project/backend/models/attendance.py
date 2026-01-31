@@ -17,8 +17,10 @@ class PunchResponse(BaseModel):
     """Response model for punch action."""
     status: Literal["time_in", "time_out"]
     timestamp: datetime
+    title: str
     message: str
     student_name: Optional[str] = None
+    profile_picture: Optional[str] = None
 
 
 class ActivityRecord(BaseModel):
@@ -26,6 +28,7 @@ class ActivityRecord(BaseModel):
     id: int
     account_id: int
     account_name: Optional[str] = None
+    account_profile_picture: Optional[str] = None
     school_id: Optional[str] = None
     time_in: Optional[datetime] = None
     time_out: Optional[datetime] = None

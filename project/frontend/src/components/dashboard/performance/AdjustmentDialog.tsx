@@ -137,14 +137,14 @@ export function AdjustmentDialog({ accountId, studentName, open, onOpenChange, o
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className=' opacity-0'>Hello World</Label>
+                            <Label className='opacity-0'>Hello World</Label>
                             <Select value={unit} onValueChange={(v: 'hours' | 'minutes') => setUnit(v)}>
-                                <SelectTrigger>
+                                <SelectTrigger className='w-full border-0 shadow-none'>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="hours">Hours</SelectItem>
-                                    <SelectItem value="minutes">Minutes</SelectItem>
+                                    <SelectItem value="hours">Hour/s</SelectItem>
+                                    <SelectItem value="minutes">Minute/s</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

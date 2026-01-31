@@ -12,6 +12,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create uploads directory for profile pictures
+RUN mkdir -p /app/uploads/profile_pictures
+
 # Copy application code
 COPY . .
 

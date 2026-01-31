@@ -57,6 +57,7 @@ class AccountResponse(BaseModel):
     updated_at: Optional[datetime] = None
     suspended_at: Optional[datetime] = None
     current_job: Optional[str] = None
+    profile_picture: Optional[str] = None  # URL to profile picture
     
     class Config:
         from_attributes = True

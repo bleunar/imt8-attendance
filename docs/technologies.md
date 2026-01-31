@@ -24,6 +24,8 @@ The backend is built with Python 3.12 and follows an asynchronous architecture.
 - **APScheduler**: Advanced Python Scheduler for background tasks.
 - **Pydantic**: Data validation and settings management using Python type annotations.
 - **Email-Validator**: Robust email syntax validation.
+- **SlowAPI**: Rate limiting library for FastAPI (based on limits).
+- **AioSMTPLib**: Asynchronous SMTP client for sending emails.
 
 ## Frontend
 
@@ -46,6 +48,8 @@ The frontend is a Single Page Application (SPA) built with React 19.
 - **Zod**: TypeScript-first schema declaration and validation library.
 - **Axios**: Promise based HTTP client for the browser and node.js.
 - **Date-fns**: Modern JavaScript date utility library.
+- **TanStack Table**: Headless UI for building powerful tables & datagrids.
+- **Recharts**: Redefined chart library built with React and D3.
 
 ## Infrastructure
 

@@ -102,18 +102,18 @@ class EmailService:
             <div class="container">
                 <div class="header">
                     <div style="font-size: 36px; font-weight: bold; letter-spacing: -1px; color: white; font-family: sans-serif;">
-                        ITSD<span style="color: #2563eb;">Attendance</span>
+                        ITSD<span style="color: #155dfc;">Attendance</span>
                     </div>
                 </div>
                 <div class="content">
                     <p>Hello {name},</p>
-                    <p>You have requested to reset your password. Use the following OTP to verify your identity:</p>
+                    <p>Use the following OTP to verify your identity to reset your password:</p>
                     <div class="otp">{otp}</div>
                     <p>This OTP will expire in 10 minutes.</p>
-                    <p>If you did not request this password reset, please ignore this email or contact support if you have concerns.</p>
+                    <p>If you did not request this password reset, please ignore this email or contact the administrator if you have any concerns.</p>
                 </div>
                 <div class="footer">
-                    <p>&copy; ITSD Attendance System</p>
+                    <p>ITSD Attendance System</p>
                 </div>
             </div>
         </body>

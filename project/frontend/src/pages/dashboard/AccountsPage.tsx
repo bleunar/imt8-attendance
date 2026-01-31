@@ -6,9 +6,24 @@ import { Card, CardContent } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from '@/components/dashboard/accounts/columns';
 import { accountService } from '@/services/accountService';
+import { UserProfile } from '@/components/UserProfile';
 import type { User, AccountFilters } from '@/types';
 import { toast } from 'sonner';
 import { Plus, Search } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+} from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { CreateAccountDialog } from './accounts/CreateAccountDialog';
 import { EditAccountDialog } from './accounts/EditAccountDialog';
@@ -33,6 +48,8 @@ export default function AccountsPage() {
     const [isPasswordOpen, setIsPasswordOpen] = useState(false);
     const [isJobOpen, setIsJobOpen] = useState(false);
     const [isPostCreateJobOpen, setIsPostCreateJobOpen] = useState(false);
+    const [isViewProfileOpen, setIsViewProfileOpen] = useState(false);
+    const [isMoveUpOpen, setIsMoveUpOpen] = useState(false);
     const [selectedAccount, setSelectedAccount] = useState<User | null>(null);
 
     const fetchAccounts = async () => {
@@ -56,6 +73,11 @@ export default function AccountsPage() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         setFilters(prev => ({ ...prev, page: 1 })); // Reset to page 1 on search
+    };
+
+    const handleViewProfile = (account: User) => {
+        setSelectedAccount(account);
+        setIsViewProfileOpen(true);
     };
 
     const handleEdit = (account: User) => {
@@ -105,13 +127,26 @@ export default function AccountsPage() {
         }
     };
 
+    const handleRemovePicture = async (account: User) => {
+        if (!confirm(`Are you sure you want to remove the profile picture for ${account.first_name}?`)) return;
+        try {
+            await accountService.removeUserProfilePicture(account.id);
+            toast.success('Profile picture removed');
+            fetchAccounts();
+        } catch (error: any) {
+            toast.error(error.response?.data?.detail || 'Failed to remove profile picture');
+        }
+    };
+
     const columns = useMemo(() => getColumns({
+        onViewProfile: handleViewProfile,
         onEdit: handleEdit,
         onPassword: handlePassword,
         onJob: handleJob,
         onSuspend: handleSuspend,
         onRestore: handleRestore,
         onDelete: handlePermanentDelete,
+        onRemovePicture: handleRemovePicture,
         currentUser
     }), [currentUser]);
 
@@ -128,30 +163,7 @@ export default function AccountsPage() {
                     {currentUser?.role === 'admin' && (
                         <Button
                             variant="destructive"
-                            onClick={async () => {
-                                if (!confirm(
-                                    "Move Up Students?\n" +
-                                    "This will advance eligible students to the next semester/year\n\n" +
-                                    "Students at Year 4.2 or higher will not be changed."
-                                )) return;
-
-                                if (!confirm(
-                                    "ARE YOU ABSOLUTELY SURE?\n\n" +
-                                    "This action affects many accounts and cannot be easily undone.\n" +
-                                    "Please confirm you want to proceed."
-                                )) return;
-
-                                try {
-                                    setIsLoading(true);
-                                    const res = await accountService.moveUpStudents();
-                                    toast.success(res.message);
-                                    fetchAccounts();
-                                } catch (error: any) {
-                                    toast.error(error.response?.data?.detail || 'Failed to move up students');
-                                } finally {
-                                    setIsLoading(false);
-                                }
-                            }}
+                            onClick={() => setIsMoveUpOpen(true)}
                         >
                             Move Up Student
                         </Button>
@@ -228,6 +240,51 @@ export default function AccountsPage() {
                 onOpenChange={setIsPostCreateJobOpen}
                 onSuccess={() => fetchAccounts()}
             />
+
+            {/* View Profile Dialog */}
+            <Dialog open={isViewProfileOpen} onOpenChange={setIsViewProfileOpen}>
+                <DialogContent className="w-full h-[85vh] overflow-y-auto">
+                    {selectedAccount && (
+                        <UserProfile mode="preview" user={selectedAccount} />
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog open={isMoveUpOpen} onOpenChange={setIsMoveUpOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Move Up Students?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will advance eligible students to the next year and semester.
+                            Students at their 4th Year 2nd semeter (or higher) will not be changed.
+                        </AlertDialogDescription>
+
+                            <span className="text-sm font-semibold text-destructive bg-red-50 p-2 rounded">
+                                WARNING: This action affects all accounts that are eligible and cannot be undone.
+                            </span>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive hover:bg-destructive/90"
+                            onClick={async () => {
+                                try {
+                                    setIsLoading(true);
+                                    const res = await accountService.moveUpStudents();
+                                    toast.success(res.message);
+                                    fetchAccounts();
+                                } catch (error: any) {
+                                    toast.error(error.response?.data?.detail || 'Failed to move up students');
+                                } finally {
+                                    setIsLoading(false);
+                                }
+                            }}
+                        >
+                            Move Up Students
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

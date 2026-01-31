@@ -20,6 +20,7 @@ export interface User {
     updated_at: string | null;
     suspended_at: string | null;
     current_job?: string | null;
+    profile_picture?: string | null;
 }
 
 export interface TokenResponse {
@@ -122,14 +123,17 @@ export interface PunchRequest {
 export interface PunchResponse {
     status: 'time_in' | 'time_out';
     timestamp: string;
+    title: string;
     message: string;
-    student_name: string | null;
+    student_name: string;
+    profile_picture?: string;
 }
 
 export interface ActivityRecord {
     id: number;
     account_id: number;
     account_name: string | null;
+    account_profile_picture?: string | null;
     school_id: string | null;
     time_in: string | null;
     time_out: string | null;
