@@ -28,8 +28,6 @@ services:
   itm8_attendance_frontend:
     build:
       context: ./frontend
-      args:
-        - VITE_API_URL=http://10.113.234.25:8050
     env_file:
       - ./frontend/.env
     container_name: itm8_attendance_frontend
