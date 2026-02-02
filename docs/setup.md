@@ -15,9 +15,9 @@ Ensure you have the following installed on your system:
 Before running the application, you need to configure the environment variables.
 
 1.  Navigate to the `project/backend` directory.
-2.  Copy `.env.example` to `.env`:
+2.  Copy `.env.template` to `.env`:
     ```bash
-    cp .env.example .env
+    cp .env.template .env
     ```
 3.  Open `.env` and fill in the required values (Database credentials, Secret keys, etc.).
 
@@ -32,9 +32,9 @@ This method runs the entire stack (Frontend, Backend, Database, Redis) in contai
     docker-compose up -d --build
     ```
 3.  Access the application:
-    - **Frontend**: http://localhost (Served via Nginx with Gzip & Caching)
-    - **Backend API**: http://localhost:8000
-    - **API Documentation**: http://localhost:8000/docs
+    - **Frontend**: http://localhost:8080 (Served via Nginx with Gzip & Caching)
+    - **Backend API**: http://localhost:8050
+    - **API Documentation**: http://localhost:8050/docs
 
 **Note on Persistence**:
 The configuration now uses named volumes to prevent data loss:
@@ -68,7 +68,7 @@ If you prefer to run services individually for debugging.
 
     or
 
-    python3 app.py
+    python3 dev.py
     ```
 
 #### 2. Frontend

@@ -14,7 +14,7 @@ import {
     Info,
     RefreshCcw
 } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ProfilePicture } from "@/components/ProfilePicture"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -233,11 +233,13 @@ export const columns: ColumnDef<ActivityRecord>[] = [
         header: "Student",
         cell: ({ row }) => (
             <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8 border border-border">
-                    <AvatarFallback className="bg-muted text-muted-foreground">
-                        {(row.original.account_name || 'S').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                </Avatar>
+                <ProfilePicture
+                    src={row.original.account_profile_picture}
+                    firstName={(row.original.account_name || '').split(' ')[0]}
+                    lastName={(row.original.account_name || '').split(' ').slice(1).join(' ')}
+                    size="sm"
+                    shape="square"
+                />
                 <div className="flex flex-col">
                     <span className="font-medium">{row.original.account_name}</span>
                     <span className="text-xs text-muted-foreground font-mono">{row.original.school_id}</span>

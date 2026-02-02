@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ProfilePicture } from '@/components/ProfilePicture';
 import type { PerformanceStat } from '@/types';
 
 interface ColumnsProps {
@@ -28,11 +28,14 @@ export const columns = ({ onViewHistory, onAdjust }: ColumnsProps): ColumnDef<Pe
             const schoolId = row.original.school_id;
             return (
                 <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 border border-border">
-                        <AvatarFallback className="bg-muted text-muted-foreground">
-                            {(name || 'NN').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
+                    <ProfilePicture
+                        src={row.original.profile_picture}
+                        firstName={(name || '').split(' ')[0]}
+                        lastName={(name || '').split(' ').slice(1).join(' ')}
+                        size="md"
+                        shape="square"
+                        className="h-9 w-9"
+                    />
                     <div className="flex flex-col">
                         <span className="font-medium">{name}</span>
                         {schoolId && (

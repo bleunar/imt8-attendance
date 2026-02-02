@@ -21,11 +21,14 @@ The backend is built with Python 3.12 and follows an asynchronous architecture.
 - **Python-Multipart**: Streaming multipart parser for file uploads and form data.
 
 ### Utilities
-- **APScheduler**: Advanced Python Scheduler for background tasks.
+
 - **Pydantic**: Data validation and settings management using Python type annotations.
 - **Email-Validator**: Robust email syntax validation.
 - **SlowAPI**: Rate limiting library for FastAPI (based on limits).
 - **AioSMTPLib**: Asynchronous SMTP client for sending emails.
+
+### Image Processing
+- **Pillow**: Python Imaging Library (Fork) for handling profile picture uploads.
 
 ## Frontend
 
@@ -41,6 +44,8 @@ The frontend is a Single Page Application (SPA) built with React 19.
 - **Radix UI**: Unstyled, accessible components for building high-quality design systems.
 - **Lucide React**: Beautiful & consistent icon library.
 - **Sonner**: An opinionated toast component for React.
+- **Next Themes**: Abstraction for themes (Dark Mode) in Next.js/React applications.
+- **Three.js** / **React Three Fiber**: 3D library and React renderer for 3D graphics.
 
 ### State & Logic
 - **React Router DOM**: Declarative routing for React web applications.

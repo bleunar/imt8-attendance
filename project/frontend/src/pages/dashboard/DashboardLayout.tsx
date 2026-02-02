@@ -59,12 +59,12 @@ export default function DashboardLayout() {
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon, show: true },
+        { name: 'Attendance', href: '/dashboard/attendance', icon: ClipboardListIcon, show: canManage },
+        { name: 'Performance', href: '/dashboard/performance', icon: BarChartIcon, show: canManage },
         { name: 'Accounts', href: '/dashboard/accounts', icon: UsersIcon, show: canManage },
         { name: 'Jobs', href: '/dashboard/jobs', icon: BriefcaseIcon, show: canManage },
-        { name: 'Performance', href: '/dashboard/performance', icon: BarChartIcon, show: canManage },
         { name: 'Leaderboards', href: '/dashboard/leaderboards', icon: TrophyIcon, show: true },
-        { name: 'Attendance', href: '/dashboard/attendance', icon: ClipboardListIcon, show: canManage },
-        { name: 'My Attendance', href: '/dashboard/my-attendance', icon: ClipboardListIcon, show: !canManage },
+        { name: 'My Attendance', href: '/dashboard/my-attendance', icon: ClipboardListIcon, show: user?.role === 'manager' || user?.role === 'student' },
         { name: 'My Profile', href: '/dashboard/profile', icon: UserIcon, show: true },
     ];
 

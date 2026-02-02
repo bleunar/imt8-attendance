@@ -296,6 +296,7 @@ export default function HomePage() {
                                                             firstName={(student.account_name || '').split(' ')[0]}
                                                             lastName={(student.account_name || '').split(' ').slice(-1)[0]}
                                                             size="sm"
+                                                            shape='square'
                                                         />
                                                         <span className="text-sm text-foreground">{student.account_name}</span>
                                                     </div>

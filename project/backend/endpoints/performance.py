@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from models.performance import PerformanceResponse, PerformanceStat
 from utilities.database import execute_query
 from utilities.dependencies import require_admin_or_manager, get_current_user
+from utilities.storage import get_profile_picture_url
 
 router = APIRouter(prefix="/performance", tags=["Performance"])
 
@@ -173,7 +174,8 @@ async def get_performance_stats(
             total_rendered_hours=total_hours,
             avg_daily_hours=avg_daily,
             avg_weekly_hours=avg_weekly,
-            adjustment_hours=round(adjustment_hours, 2)
+            adjustment_hours=round(adjustment_hours, 2),
+            profile_picture=get_profile_picture_url(acc_id)
         ))
         
     # Sort by Total Rendered Hours (DESC), then Name (ASC)

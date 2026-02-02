@@ -90,7 +90,7 @@ async def punch(request: Request, data: PunchRequest):
         SELECT time_in
         FROM job_activity 
         WHERE account_id = %s 
-          AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')
+          AND (time_out IS NULL OR CAST(time_out AS CHAR) = '0000-00-00 00:00:00')
         ORDER BY time_in DESC
         LIMIT 1
         """,
@@ -139,7 +139,7 @@ async def punch(request: Request, data: PunchRequest):
             f"""
             UPDATE job_activity 
             SET time_out = %s, updated_at = %s{invalidation_updates}
-            WHERE account_id = %s AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')
+            WHERE account_id = %s AND (time_out IS NULL OR CAST(time_out AS CHAR) = '0000-00-00 00:00:00')
             """,
             (now, now, *invalidation_values, account["id"])
         )
@@ -230,8 +230,9 @@ async def get_public_active_sessions(
         SELECT DISTINCT CONCAT(COALESCE(a.first_name, ''), ' ', COALESCE(a.last_name, '')) as name
         FROM job_activity ja
         JOIN accounts a ON ja.account_id = a.id
-        WHERE (ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00')
+        WHERE (ja.time_out IS NULL OR CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00')
           AND {time_condition}
+          AND ja.invalidated_at IS NULL
         ORDER BY name
         """,
         tuple(params)
@@ -264,23 +265,24 @@ async def get_public_today_activity(
     activities = await execute_query(
         f"""
         SELECT ja.id, ja.account_id, ja.time_in, 
-               IF(ja.time_out = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out, 
+               IF(CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out, 
                ja.properties, ja.created_at,
                ja.invalidated_at, ja.invalidation_notes,
                CONCAT(a.first_name, ' ', a.last_name) as account_name,
                a.school_id,
                CASE 
-                   WHEN ja.time_out != '0000-00-00 00:00:00'
+                   WHEN CAST(ja.time_out AS CHAR) != '0000-00-00 00:00:00'
                    THEN TIMESTAMPDIFF(MINUTE, ja.time_in, ja.time_out)
                    ELSE NULL 
                END as duration_minutes
         FROM job_activity ja
         JOIN accounts a ON ja.account_id = a.id
         WHERE {time_condition}
+          AND ja.invalidated_at IS NULL
         ORDER BY 
-            (ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00') DESC, 
+            (ja.time_out IS NULL OR CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00') DESC, 
             CASE 
-                WHEN (ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00') 
+                WHEN (ja.time_out IS NULL OR CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00') 
                 THEN CONCAT(a.first_name, ' ', a.last_name) 
                 ELSE NULL 
             END ASC,
@@ -332,7 +334,7 @@ async def list_activities(
     # If not, we show (Date Range OR Active)
     
     if active_only:
-        conditions.append("(ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00') AND DATE(ja.time_in) = UTC_DATE()")
+        conditions.append("(ja.time_out IS NULL OR CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00') AND DATE(ja.time_in) = UTC_DATE()")
     else:
         # Build date condition group
         date_conditions = []
@@ -350,7 +352,7 @@ async def list_activities(
         if date_conditions:
             # Combine: ( (Date Match) OR (Is Active) )
             date_sql = " AND ".join(date_conditions)
-            conditions.append(f"({date_sql} OR (ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00'))")
+            conditions.append(f"({date_sql} OR (ja.time_out IS NULL OR CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00'))")
             
     where_clause = " AND ".join(conditions) if conditions else "1=1"
     
@@ -387,19 +389,19 @@ async def list_activities(
     sort_col = sort_mapping.get(sort_by, "ja.time_in")
     
     # Force active sessions to the top, then sort by user preference
-    order_clause = f"(ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00') DESC, {sort_col} {sort_order.upper()}"
+    order_clause = f"(ja.time_out IS NULL OR CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00') DESC, {sort_col} {sort_order.upper()}"
     
     # Get activities
     activities = await execute_query(
         f"""
         SELECT ja.id, ja.account_id, ja.time_in, 
-               IF(ja.time_out = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out,
+               IF(CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out,
                ja.properties, ja.created_at,
                ja.invalidated_at, ja.invalidation_notes,
                CONCAT(a.first_name, ' ', a.last_name) as account_name,
                a.school_id,
                CASE 
-                   WHEN ja.time_out != '0000-00-00 00:00:00'
+                   WHEN CAST(ja.time_out AS CHAR) != '0000-00-00 00:00:00'
                    THEN TIMESTAMPDIFF(MINUTE, ja.time_in, ja.time_out)
                    ELSE NULL 
                END as duration_minutes
@@ -412,6 +414,11 @@ async def list_activities(
         tuple(params) + (page_size, offset)
     )
     
+    
+    # Add profile picture URL to each activity
+    for activity in activities:
+        activity["account_profile_picture"] = get_profile_picture_url(activity["account_id"])
+
     return ActivityListResponse(
         items=[ActivityRecord(**ensure_activity_timezone(a)) for a in activities],
         total=total,
@@ -511,7 +518,7 @@ async def get_attendance_summary(
             CONCAT(a.first_name, ' ', a.last_name) as account_name,
             a.school_id,
             COUNT(*) as total_sessions,
-            SUM(TIMESTAMPDIFF(MINUTE, ja.time_in, COALESCE(NULLIF(ja.time_out, '0000-00-00 00:00:00'), UTC_TIMESTAMP()))) as total_minutes
+            SUM(TIMESTAMPDIFF(MINUTE, ja.time_in, COALESCE(NULLIF(CAST(ja.time_out AS CHAR), '0000-00-00 00:00:00'), UTC_TIMESTAMP()))) as total_minutes
         FROM job_activity ja
         JOIN accounts a ON ja.account_id = a.id
         WHERE {where_clause}
@@ -553,7 +560,7 @@ async def get_active_sessions(
     activities = await execute_query(
         """
         SELECT ja.id, ja.account_id, ja.time_in, 
-               IF(ja.time_out = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out, 
+               IF(CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out, 
                ja.properties, ja.created_at,
                ja.invalidated_at, ja.invalidation_notes,
                CONCAT(a.first_name, ' ', a.last_name) as account_name,
@@ -561,7 +568,7 @@ async def get_active_sessions(
                NULL as duration_minutes
         FROM job_activity ja
         JOIN accounts a ON ja.account_id = a.id
-        WHERE (ja.time_out IS NULL OR ja.time_out = '0000-00-00 00:00:00')
+        WHERE (ja.time_out IS NULL OR CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00')
           AND DATE(ja.time_in) = UTC_DATE()
         ORDER BY ja.time_in DESC
         """
@@ -584,9 +591,9 @@ async def get_overdue_count(
         """
         SELECT COUNT(*) as count
         FROM job_activity
-        WHERE (time_out IS NULL OR time_out = '0000-00-00 00:00:00')
+        WHERE (time_out IS NULL OR CAST(time_out AS CHAR) = '0000-00-00 00:00:00')
           AND DATE(time_in) < UTC_DATE()
-          AND invalidated_at IS NULL
+          AND invalidated_at IS NULL;
         """
     )
     
@@ -651,13 +658,13 @@ async def update_activity(
     updated_rec = await execute_one(
         """
         SELECT ja.id, ja.account_id, ja.time_in, 
-               IF(ja.time_out = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out, 
+               IF(CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out, 
                ja.properties, ja.created_at,
                ja.invalidated_at, ja.invalidation_notes,
                CONCAT(a.first_name, ' ', a.last_name) as account_name,
                a.school_id,
                CASE 
-                   WHEN ja.time_out != '0000-00-00 00:00:00'
+                   WHEN CAST(ja.time_out AS CHAR) != '0000-00-00 00:00:00'
                    THEN TIMESTAMPDIFF(MINUTE, ja.time_in, ja.time_out)
                    ELSE NULL 
                END as duration_minutes
@@ -726,13 +733,13 @@ async def invalidate_activity(
     updated_rec = await execute_one(
         """
         SELECT ja.id, ja.account_id, ja.time_in, 
-               IF(ja.time_out = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out, 
+               IF(CAST(ja.time_out AS CHAR) = '0000-00-00 00:00:00', NULL, ja.time_out) as time_out, 
                ja.properties, ja.created_at,
                ja.invalidated_at, ja.invalidation_notes,
                CONCAT(a.first_name, ' ', a.last_name) as account_name,
                a.school_id,
                CASE 
-                   WHEN ja.time_out != '0000-00-00 00:00:00'
+                   WHEN CAST(ja.time_out AS CHAR) != '0000-00-00 00:00:00'
                    THEN TIMESTAMPDIFF(MINUTE, ja.time_in, ja.time_out)
                    ELSE NULL 
                END as duration_minutes
@@ -853,7 +860,7 @@ async def bulk_close(
         UPDATE job_activity 
         SET time_out = %s, updated_at = %s
         WHERE id IN ({placeholders}) 
-        AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')
+        AND (time_out IS NULL OR CAST(time_out AS CHAR) = '0000-00-00 00:00:00')
         """,
         (now, now, *data.ids)
     )
@@ -882,7 +889,7 @@ async def bulk_invalidate(
         UPDATE job_activity 
         SET time_out = DATE_ADD(time_in, INTERVAL 30 MINUTE), updated_at = %s
         WHERE id IN ({placeholders})
-          AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')
+          AND (time_out IS NULL OR CAST(time_out AS CHAR) = '0000-00-00 00:00:00')
         """,
         (now, *data.ids)
     )

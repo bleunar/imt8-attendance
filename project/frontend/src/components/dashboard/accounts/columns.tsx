@@ -61,6 +61,7 @@ export const getColumns = ({
                             firstName={user.first_name}
                             lastName={user.last_name}
                             size="sm"
+                            shape="square"
                         />
                         <div className="flex flex-col">
                             <span className="font-medium">{user.first_name} {user.last_name}</span>

@@ -213,6 +213,7 @@ export interface PerformanceStat {
     avg_daily_hours: number;
     avg_weekly_hours: number;
     adjustment_hours: number;
+    profile_picture?: string | null;
 }
 
 export interface PerformanceFilters {

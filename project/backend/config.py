@@ -101,8 +101,8 @@ class Settings:
         ).split(",")
         
         # Cookie settings
-        self.COOKIE_SECURE: bool = self.ENVIRONMENT == "production"
-        self.COOKIE_SAMESITE: str = "lax" if self.ENVIRONMENT == "development" else "strict"
+        self.COOKIE_SECURE: bool = os.getenv("COOKIE_SECURE", str(self.ENVIRONMENT == "production")).lower() == "true"
+        self.COOKIE_SAMESITE: str = os.getenv("COOKIE_SAMESITE", "lax" if self.ENVIRONMENT == "development" else "strict")
         
         # Timezone settings
         self.TIMEZONE: str = os.getenv("TIMEZONE", "Asia/Manila")

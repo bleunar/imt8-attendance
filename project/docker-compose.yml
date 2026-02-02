@@ -1,4 +1,4 @@
-name: itm8-attendance
+name: itm8_attendance
 
 services:
   itm8_attendance_backend:
@@ -11,24 +11,25 @@ services:
     env_file:
       - ./backend/.env
     networks:
-      - itm8-network
+      - itm8_attendance
+      - itm8_db
     volumes:
-      - attendance_uploads:/app/uploads
+      - uploads:/app/uploads
 
   itm8_attendance_redis:
     image: redis:alpine
     container_name: itm8_attendance_redis
     restart: always
     networks:
-      - itm8-network
+      - itm8_attendance
     volumes:
-      - attendance_redis_data:/data
+      - redis_data:/data
 
   itm8_attendance_frontend:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=${VITE_API_URL:-}
+        - VITE_API_URL=http://10.113.234.25:8050
     env_file:
       - ./frontend/.env
     container_name: itm8_attendance_frontend
@@ -38,14 +39,20 @@ services:
     depends_on:
       - itm8_attendance_backend
     networks:
-      - itm8-network
+      - itm8_attendance
     volumes:
-      - attendance_uploads:/usr/share/nginx/html/uploads
+      - uploads:/usr/share/nginx/html/uploads
 
 networks:
-  itm8-network:
+  itm8_attendance:
+    name: itm8_attendance
     driver: bridge
+  itm8_db:
+    name: itm8_db
+    external: true
 
 volumes:
-  attendance_uploads:
-  attendance_redis_data:
+  uploads:
+    name: itm8_attendance_uploads
+  redis_data:
+    name: itm8_attendance_redis_data

@@ -19,6 +19,7 @@ class PerformanceStat(BaseModel):
     job_name: Optional[str] = None
     school_id: Optional[str] = None
     is_online: bool = False
+    profile_picture: Optional[str] = None
     
     class Config:
         from_attributes = True

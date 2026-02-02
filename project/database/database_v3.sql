@@ -108,33 +108,12 @@ CREATE TABLE schedule_overrides (
 );
 
 
--- NEW/UPDATED Tables:
-
 -- NEW
-CREATE TABLE job_completion (
+CREATE TABLE job_certificate (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     account_id BIGINT UNSIGNED NOT NULL,
     duty_hours INT NOT NULL,
     school_year VARCHAR NOT NULL,
     semester VARCHAR NOT NULL,
     managers JSON NOT NULL, -- list of the manager's account_id, name, and specialization. e.g.[{`id`: `123456`, `name`: `Jaymar Dingcong`, specialization: `IT Specialist`}, ]
-);
-
-
--- UPDATED: Added a field to mark if the activity is recorded
-CREATE TABLE job_activity (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    account_id BIGINT NOT NULL,
-    time_in TIMESTAMP NULL,
-    time_out TIMESTAMP NULL,
-    properties JSON NULL,
-    
-    invalidated_at TIMESTAMP NULL, -- assume that the activity is invalid if this has value
-    invalidation_notes VARCHAR(255) NULL,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    recorded_at TIMESTAMP NULL, -- assume that the activity has been recorded if this has value
-    
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
 );

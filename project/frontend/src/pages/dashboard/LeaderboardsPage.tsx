@@ -162,6 +162,7 @@ export default function LeaderboardsPage() {
                                                                 lastName={entry.last_name}
                                                                 size={actualRank === 1 ? 'xl' : 'lg'}
                                                                 className="shadow-xl scale-175"
+                                                                shape="square"
                                                             />
                                                             {/* Rank Badge */}
                                                             <div className="absolute -bottom-8 -right-6">{getRankIcon(actualRank)}</div>
