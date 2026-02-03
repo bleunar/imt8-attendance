@@ -30,6 +30,8 @@ services:
       context: ./frontend
     env_file:
       - ./frontend/.env
+    args:
+      - VITE_API_URL=${VITE_API_URL}
     container_name: itm8_attendance_frontend
     restart: always
     ports:
