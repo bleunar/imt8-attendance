@@ -4,7 +4,7 @@
 
 // User and Authentication types
 export interface User {
-    id: number;
+    id: string;
     role: 'admin' | 'manager' | 'student';
     department: string | null;
     school_id: string | null;
@@ -75,7 +75,7 @@ export interface AccountListResponse {
 
 // Job types
 export interface Job {
-    id: number;
+    id: string;
     department: string | null;
     name: string;
     description: string | null;
@@ -105,12 +105,12 @@ export interface JobListResponse {
 }
 
 export interface AccountJob {
-    account_id: number;
-    job_id: number;
+    account_id: string;
+    job_id: string;
     account_name: string | null;
     job_name: string | null;
     assigned_at: string;
-    assigned_by: number | null;
+    assigned_by: string | null;
     expires_at: string | null;
     department: string | null;
 }
@@ -131,7 +131,7 @@ export interface PunchResponse {
 
 export interface ActivityRecord {
     id: number;
-    account_id: number;
+    account_id: string;
     account_name: string | null;
     account_profile_picture?: string | null;
     school_id: string | null;
@@ -163,7 +163,7 @@ export interface ActivityListResponse {
 }
 
 export interface StudentSummary {
-    account_id: number;
+    account_id: string;
     account_name: string;
     school_id: string | null;
     total_sessions: number;
@@ -204,7 +204,7 @@ export interface JobFilters {
 }
 
 export interface PerformanceStat {
-    account_id: number;
+    account_id: string;
     name: string;
     school_id: string | null;
     job_name?: string;
@@ -232,8 +232,8 @@ export interface PerformanceResponse {
 // Time Adjustment types
 export interface TimeAdjustment {
     id: number;
-    account_id: number;
-    manager_id: number | null;
+    account_id: string;
+    manager_id: string | null;
     manager_name: string | null;
     adjustment_minutes: number;
     reason: string;
@@ -241,7 +241,7 @@ export interface TimeAdjustment {
 }
 
 export interface TimeAdjustmentCreate {
-    account_id: number;
+    account_id: string;
     adjustment_minutes: number;
     reason: string;
 }

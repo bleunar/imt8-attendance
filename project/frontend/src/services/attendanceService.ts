@@ -14,7 +14,7 @@ import type {
 export interface ActivityFilters {
     page?: number;
     page_size?: number;
-    account_id?: number;
+    account_id?: string;
     date_from?: string;
     date_to?: string;
     active_only?: boolean;
@@ -86,7 +86,7 @@ export const attendanceService = {
      * Get student's activity history
      */
     async getStudentActivities(
-        studentId: number,
+        studentId: string,
         page = 1,
         pageSize = 20,
         dateFrom?: string,

@@ -11,6 +11,7 @@ Handles startup checks and initial data setup:
 from datetime import datetime, timezone
 from utilities.database import check_database_connection, execute_one, execute_insert
 from utilities.email import check_smtp_connection
+from utilities.id_generator import generate_long_id
 from core.security import hash_password
 from core.logging import get_logger
 from config import settings
@@ -74,15 +75,16 @@ async def ensure_admin_account() -> bool:
         # Create default admin account
         logger.info("[Admin] No admin account found. Creating default admin...")
         
+        admin_id = generate_long_id()
         password_hash = hash_password(settings.ADMIN_PASSWORD)
         now = datetime.now(timezone.utc)
         
-        admin_id = await execute_insert(
+        await execute_insert(
             """
-            INSERT INTO accounts (role, email, password_hash, first_name, last_name, created_at, updated_at)
-            VALUES ('admin', %s, %s, 'System', 'Administrator', %s, %s)
+            INSERT INTO accounts (id, role, email, password_hash, first_name, last_name, created_at, updated_at)
+            VALUES (%s, 'admin', %s, %s, 'System', 'Administrator', %s, %s)
             """,
-            (settings.ADMIN_EMAIL, password_hash, now, now)
+            (admin_id, settings.ADMIN_EMAIL, password_hash, now, now)
         )
         
         logger.info(f"[Admin] Created admin account: Email: {settings.ADMIN_EMAIL}, ID: {admin_id}")

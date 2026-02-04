@@ -23,7 +23,7 @@ class JobUpdate(BaseModel):
 
 class JobResponse(BaseModel):
     """Response model for job data."""
-    id: int
+    id: str
     department: Optional[str] = None
     name: str
     description: Optional[str] = None
@@ -46,28 +46,28 @@ class JobListResponse(BaseModel):
 
 class JobAssign(BaseModel):
     """Request model for assigning a job to an account."""
-    account_id: int
+    account_id: str
     expires_at: Optional[datetime] = None
 
 
 class JobAssignBulk(BaseModel):
     """Request model for bulk assigning jobs."""
-    account_ids: list[int]
+    account_ids: list[str]
     expires_at: Optional[datetime] = None
 
 
 class JobUnassignBulk(BaseModel):
     """Request model for bulk unassigning jobs."""
-    account_ids: list[int]
+    account_ids: list[str]
 
 
 class AccountJobResponse(BaseModel):
     """Response model for account-job assignment."""
-    account_id: int
-    job_id: int
+    account_id: str
+    job_id: str
     account_name: Optional[str] = None
     job_name: Optional[str] = None
     assigned_at: datetime
-    assigned_by: Optional[int] = None
+    assigned_by: Optional[str] = None
     expires_at: Optional[datetime] = None
     department: Optional[str] = None

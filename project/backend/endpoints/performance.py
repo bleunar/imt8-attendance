@@ -14,7 +14,7 @@ router = APIRouter(prefix="/performance", tags=["Performance"])
 @router.get("/", response_model=PerformanceResponse)
 async def get_performance_stats(
     search: str | None = None,
-    job_id: int | None = None,
+    job_id: str | None = None,
     status: str = "all",
     role: str = "student",
     suspended: str = "false",

@@ -18,6 +18,7 @@ from models.jobs import (
 from models.auth import MessageResponse
 from utilities.database import execute_query, execute_one, execute_insert, execute_update
 from utilities.dependencies import get_current_user, require_admin, require_admin_or_manager
+from utilities.id_generator import generate_long_id
 
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -87,7 +88,7 @@ async def list_jobs(
 
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job(
-    job_id: int,
+    job_id: str,
     user: dict = Depends(require_admin_or_manager)
 ):
     """
@@ -123,14 +124,17 @@ async def create_job(
     
     Admin role only.
     """
+    # Generate unique ID
+    job_id = generate_long_id()
+    
     # Insert job
     now = datetime.now(timezone.utc)
-    job_id = await execute_insert(
+    await execute_insert(
         """
-        INSERT INTO jobs (department, name, description, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO jobs (id, department, name, description, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """,
-        (data.department, data.name, data.description, now, now)
+        (job_id, data.department, data.name, data.description, now, now)
     )
     
     return await get_job(job_id, user)
@@ -138,7 +142,7 @@ async def create_job(
 
 @router.put("/{job_id}", response_model=JobResponse)
 async def update_job(
-    job_id: int,
+    job_id: str,
     data: JobUpdate,
     user: dict = Depends(require_admin)
 ):
@@ -196,7 +200,7 @@ async def update_job(
 
 @router.delete("/{job_id}", response_model=MessageResponse)
 async def delete_job(
-    job_id: int,
+    job_id: str,
     user: dict = Depends(require_admin)
 ):
     """
@@ -227,7 +231,7 @@ async def delete_job(
 
 @router.get("/{job_id}/assignments", response_model=list[AccountJobResponse])
 async def list_job_assignments(
-    job_id: int,
+    job_id: str,
     user: dict = Depends(require_admin_or_manager)
 ):
     """
@@ -268,7 +272,7 @@ async def list_job_assignments(
 
 @router.post("/{job_id}/assign", response_model=AccountJobResponse)
 async def assign_job(
-    job_id: int,
+    job_id: str,
     data: JobAssign,
     user: dict = Depends(require_admin_or_manager)
 ):
@@ -348,8 +352,8 @@ async def assign_job(
 
 @router.delete("/{job_id}/unassign/{account_id}", response_model=MessageResponse)
 async def unassign_job(
-    job_id: int,
-    account_id: int,
+    job_id: str,
+    account_id: str,
     user: dict = Depends(require_admin_or_manager)
 ):
     """
@@ -380,7 +384,7 @@ async def unassign_job(
 
 @router.post("/{job_id}/assign/bulk", response_model=MessageResponse)
 async def assign_job_bulk(
-    job_id: int,
+    job_id: str,
     data: JobAssignBulk,
     user: dict = Depends(require_admin_or_manager)
 ):
@@ -428,7 +432,7 @@ async def assign_job_bulk(
 
 @router.post("/{job_id}/unassign/bulk", response_model=MessageResponse)
 async def unassign_job_bulk(
-    job_id: int,
+    job_id: str,
     data: JobUnassignBulk,
     user: dict = Depends(require_admin_or_manager)
 ):

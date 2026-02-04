@@ -25,7 +25,7 @@ export const jobService = {
     /**
      * Get job by ID
      */
-    async get(id: number): Promise<Job> {
+    async get(id: string): Promise<Job> {
         const response = await api.get<Job>(`/jobs/${id}`);
         return response.data;
     },
@@ -41,7 +41,7 @@ export const jobService = {
     /**
      * Update job
      */
-    async update(id: number, data: JobUpdate): Promise<Job> {
+    async update(id: string, data: JobUpdate): Promise<Job> {
         const response = await api.put<Job>(`/jobs/${id}`, data);
         return response.data;
     },
@@ -49,7 +49,7 @@ export const jobService = {
     /**
      * Delete job
      */
-    async delete(id: number): Promise<MessageResponse> {
+    async delete(id: string): Promise<MessageResponse> {
         const response = await api.delete<MessageResponse>(`/jobs/${id}`);
         return response.data;
     },
@@ -57,7 +57,7 @@ export const jobService = {
     /**
      * List assignments for a job
      */
-    async listAssignments(jobId: number): Promise<AccountJob[]> {
+    async listAssignments(jobId: string): Promise<AccountJob[]> {
         const response = await api.get<AccountJob[]>(`/jobs/${jobId}/assignments`);
         return response.data;
     },
@@ -65,7 +65,7 @@ export const jobService = {
     /**
      * Assign job to account
      */
-    async assign(jobId: number, accountId: number, expiresAt?: string): Promise<AccountJob> {
+    async assign(jobId: string, accountId: string, expiresAt?: string): Promise<AccountJob> {
         const response = await api.post<AccountJob>(`/jobs/${jobId}/assign`, {
             account_id: accountId,
             expires_at: expiresAt,
@@ -76,14 +76,14 @@ export const jobService = {
     /**
      * Unassign job from account
      */
-    async unassign(jobId: number, accountId: number): Promise<MessageResponse> {
+    async unassign(jobId: string, accountId: string): Promise<MessageResponse> {
         const response = await api.delete<MessageResponse>(`/jobs/${jobId}/unassign/${accountId}`);
         return response.data;
     },
     /**
      * Bulk assign job to accounts
      */
-    async assignBulk(jobId: number, accountIds: number[], expiresAt?: string): Promise<MessageResponse> {
+    async assignBulk(jobId: string, accountIds: string[], expiresAt?: string): Promise<MessageResponse> {
         const response = await api.post<MessageResponse>(`/jobs/${jobId}/assign/bulk`, {
             account_ids: accountIds,
             expires_at: expiresAt,
@@ -94,7 +94,7 @@ export const jobService = {
     /**
      * Bulk unassign job from accounts
      */
-    async unassignBulk(jobId: number, accountIds: number[]): Promise<MessageResponse> {
+    async unassignBulk(jobId: string, accountIds: string[]): Promise<MessageResponse> {
         const response = await api.post<MessageResponse>(`/jobs/${jobId}/unassign/bulk`, {
             account_ids: accountIds,
         });

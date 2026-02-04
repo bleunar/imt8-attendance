@@ -59,7 +59,7 @@ async def get_top_performers(
             -- Total time from completed activities (not invalidated)
             COALESCE(SUM(
                 CASE 
-                    WHEN ja.time_out IS NOT NULL AND ja.time_out != '0000-00-00 00:00:00'
+                    WHEN ja.time_out IS NOT NULL AND YEAR(ja.time_out) > 0
                     THEN TIMESTAMPDIFF(MINUTE, ja.time_in, ja.time_out)
                     ELSE 0
                 END
@@ -75,14 +75,14 @@ async def get_top_performers(
             
             -- Count of completed activities
             COUNT(CASE 
-                WHEN ja.time_out IS NOT NULL AND ja.time_out != '0000-00-00 00:00:00'
+                WHEN ja.time_out IS NOT NULL AND YEAR(ja.time_out) > 0
                 THEN 1 
             END) as completed_count,
             
             -- Check if currently online
             (SELECT COUNT(*) FROM job_activity ja_online 
              WHERE ja_online.account_id = a.id 
-             AND (ja_online.time_out IS NULL OR ja_online.time_out = '0000-00-00 00:00:00')
+             AND (ja_online.time_out IS NULL OR YEAR(ja_online.time_out) = 0)
              AND ja_online.invalidated_at IS NULL) > 0 as is_online
              
         FROM accounts a
@@ -99,7 +99,7 @@ async def get_top_performers(
         HAVING (
             COALESCE(SUM(
                 CASE 
-                    WHEN ja.time_out IS NOT NULL AND ja.time_out != '0000-00-00 00:00:00'
+                    WHEN ja.time_out IS NOT NULL AND YEAR(ja.time_out) > 0
                     THEN TIMESTAMPDIFF(MINUTE, ja.time_in, ja.time_out)
                     ELSE 0
                 END
@@ -114,7 +114,7 @@ async def get_top_performers(
         ORDER BY (
             COALESCE(SUM(
                 CASE 
-                    WHEN ja.time_out IS NOT NULL AND ja.time_out != '0000-00-00 00:00:00'
+                    WHEN ja.time_out IS NOT NULL AND YEAR(ja.time_out) > 0
                     THEN TIMESTAMPDIFF(MINUTE, ja.time_in, ja.time_out)
                     ELSE 0
                 END

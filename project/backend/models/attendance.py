@@ -26,7 +26,7 @@ class PunchResponse(BaseModel):
 class ActivityRecord(BaseModel):
     """Response model for a single activity record."""
     id: int
-    account_id: int
+    account_id: str
     account_name: Optional[str] = None
     account_profile_picture: Optional[str] = None
     school_id: Optional[str] = None
@@ -53,7 +53,7 @@ class ActivityListResponse(BaseModel):
 
 class StudentSummary(BaseModel):
     """Summary of a student's total time."""
-    account_id: int
+    account_id: str
     account_name: str
     school_id: Optional[str] = None
     total_sessions: int

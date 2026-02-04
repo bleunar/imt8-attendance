@@ -10,7 +10,7 @@ class PerformanceStat(BaseModel):
     """
     Performance statistics for a student.
     """
-    account_id: int
+    account_id: str
     name: str
     total_rendered_hours: float
     avg_daily_hours: float

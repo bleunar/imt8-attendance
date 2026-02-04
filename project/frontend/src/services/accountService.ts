@@ -26,7 +26,7 @@ export const accountService = {
     /**
      * Get account by ID
      */
-    async get(id: number): Promise<User> {
+    async get(id: string): Promise<User> {
         const response = await api.get<User>(`/accounts/${id}`);
         return response.data;
     },
@@ -42,7 +42,7 @@ export const accountService = {
     /**
      * Update account
      */
-    async update(id: number, data: AccountUpdate): Promise<User> {
+    async update(id: string, data: AccountUpdate): Promise<User> {
         const response = await api.put<User>(`/accounts/${id}`, data);
         return response.data;
     },
@@ -50,7 +50,7 @@ export const accountService = {
     /**
      * Suspend account (soft delete)
      */
-    async suspend(id: number): Promise<MessageResponse> {
+    async suspend(id: string): Promise<MessageResponse> {
         const response = await api.delete<MessageResponse>(`/accounts/${id}`);
         return response.data;
     },
@@ -58,7 +58,7 @@ export const accountService = {
     /**
      * Restore suspended account
      */
-    async restore(id: number): Promise<MessageResponse> {
+    async restore(id: string): Promise<MessageResponse> {
         const response = await api.post<MessageResponse>(`/accounts/${id}/restore`);
         return response.data;
     },
@@ -66,7 +66,7 @@ export const accountService = {
     /**
      * Permanently delete account (hard delete)
      */
-    async permanentDelete(id: number): Promise<MessageResponse> {
+    async permanentDelete(id: string): Promise<MessageResponse> {
         const response = await api.delete<MessageResponse>(`/accounts/${id}/permanent`);
         return response.data;
     },
@@ -151,7 +151,7 @@ export const accountService = {
     /**
      * Remove a user's profile picture (admin/manager only)
      */
-    async removeUserProfilePicture(accountId: number): Promise<MessageResponse> {
+    async removeUserProfilePicture(accountId: string): Promise<MessageResponse> {
         const response = await api.delete<MessageResponse>(`/accounts/${accountId}/picture`);
         return response.data;
     },

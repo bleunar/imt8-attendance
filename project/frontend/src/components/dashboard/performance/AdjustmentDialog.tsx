@@ -27,7 +27,7 @@ import {
 import { timeAdjustmentService } from '@/services/timeAdjustmentService';
 
 interface AdjustmentDialogProps {
-    accountId: number;
+    accountId: string;
     studentName: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;

@@ -74,17 +74,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.middleware("http")
-async def global_exception_handler(request: Request, call_next):
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler to log unhandled errors."""
-    try:
-        return await call_next(request)
-    except Exception as e:
-        logger.exception(f"Unhandled exception processing request: {request.method} {request.url}")
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "Internal Server Error"}
-        )
+    logger.exception(f"Unhandled exception processing request: {request.method} {request.url}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error"}
+    )
 
 # Include routers
 app.include_router(auth.router)

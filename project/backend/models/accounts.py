@@ -41,7 +41,7 @@ class AccountUpdate(BaseModel):
 
 class AccountResponse(BaseModel):
     """Response model for account data."""
-    id: int
+    id: str
     role: str
     department: Optional[str] = None
     school_id: Optional[str] = None

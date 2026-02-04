@@ -18,7 +18,7 @@ export const timeAdjustmentService = {
     /**
      * List time adjustments, optionally filtered by account_id.
      */
-    async list(params: { account_id?: number; page?: number; page_size?: number } = {}): Promise<TimeAdjustmentListResponse> {
+    async list(params: { account_id?: string; page?: number; page_size?: number } = {}): Promise<TimeAdjustmentListResponse> {
         const response = await api.get('/time-adjustments/', { params });
         return response.data;
     },

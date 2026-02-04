@@ -46,7 +46,7 @@ export function PostCreateJobDialog({ account, open, onOpenChange, onSuccess }: 
         if (!account || !selectedJobId) return;
         setIsLoading(true);
         try {
-            await jobService.assign(Number(selectedJobId), account.id);
+            await jobService.assign(selectedJobId, account.id);
             toast.success('Job assigned successfully');
 
             // Refresh account data

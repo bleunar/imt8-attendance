@@ -9,7 +9,7 @@ from datetime import datetime
 
 class TimeAdjustmentCreate(BaseModel):
     """Request model for creating a time adjustment."""
-    account_id: int
+    account_id: str
     adjustment_minutes: int  # Positive = add time, Negative = deduct time
     reason: str
 
@@ -17,8 +17,8 @@ class TimeAdjustmentCreate(BaseModel):
 class TimeAdjustmentResponse(BaseModel):
     """Response model for a time adjustment."""
     id: int
-    account_id: int
-    manager_id: Optional[int] = None
+    account_id: str
+    manager_id: Optional[str] = None
     manager_name: Optional[str] = None
     adjustment_minutes: int
     reason: str

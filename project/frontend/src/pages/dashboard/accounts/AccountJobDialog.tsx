@@ -49,7 +49,7 @@ export function AccountJobDialog({ account, open, onOpenChange, onSuccess }: Acc
         if (!account || !selectedJobId) return;
         setIsLoading(true);
         try {
-            await jobService.assign(Number(selectedJobId), account.id);
+            await jobService.assign(selectedJobId, account.id);
             toast.success('Job assigned successfully');
 
             // Refresh account data to get updated job info

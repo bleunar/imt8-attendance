@@ -42,8 +42,8 @@ export function JobMembersDialog({ job, open, onOpenChange }: JobMembersDialogPr
 
     // Selection
     // We store IDs of checked items
-    const [checkedLeft, setCheckedLeft] = useState<Set<number>>(new Set());
-    const [checkedRight, setCheckedRight] = useState<Set<number>>(new Set());
+    const [checkedLeft, setCheckedLeft] = useState<Set<string>>(new Set());
+    const [checkedRight, setCheckedRight] = useState<Set<string>>(new Set());
 
     // Fetch Assigned (Right Side)
     const fetchAssignments = async () => {
@@ -106,14 +106,14 @@ export function JobMembersDialog({ job, open, onOpenChange }: JobMembersDialogPr
 
 
     // Handlers
-    const handleCheckLeft = (id: number, checked: boolean) => {
+    const handleCheckLeft = (id: string, checked: boolean) => {
         const newSet = new Set(checkedLeft);
         if (checked) newSet.add(id);
         else newSet.delete(id);
         setCheckedLeft(newSet);
     };
 
-    const handleCheckRight = (id: number, checked: boolean) => {
+    const handleCheckRight = (id: string, checked: boolean) => {
         const newSet = new Set(checkedRight);
         if (checked) newSet.add(id);
         else newSet.delete(id);

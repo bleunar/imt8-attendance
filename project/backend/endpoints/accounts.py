@@ -21,6 +21,7 @@ from utilities.storage import (
     save_profile_picture, delete_profile_picture, get_profile_picture_url,
     validate_image, MAX_FILE_SIZE, ALLOWED_CONTENT_TYPES
 )
+from utilities.id_generator import generate_long_id
 
 
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
@@ -323,7 +324,7 @@ async def remove_own_profile_picture(
 
 @router.delete("/{account_id}/picture")
 async def remove_user_profile_picture(
-    account_id: int,
+    account_id: str,
     user: dict = Depends(require_admin_or_manager)
 ):
     """
@@ -361,7 +362,7 @@ async def remove_user_profile_picture(
 
 @router.get("/{account_id}", response_model=AccountResponse)
 async def get_account(
-    account_id: int,
+    account_id: str,
     user: dict = Depends(require_admin_or_manager)
 ):
     """
@@ -439,17 +440,20 @@ async def create_account(
     # Hash password
     password_hash = hash_password(data.password)
     
+    # Generate unique ID
+    account_id = generate_long_id()
+    
     # Insert account
     now = datetime.now(timezone.utc)
-    account_id = await execute_insert(
+    await execute_insert(
         """
         INSERT INTO accounts 
-        (role, department, school_id, email, password_hash, 
+        (id, role, department, school_id, email, password_hash, 
          first_name, middle_name, last_name, birth_date, gender, course, year_level, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
-            data.role, data.department, data.school_id, data.email, password_hash,
+            account_id, data.role, data.department, data.school_id, data.email, password_hash,
             data.first_name, data.middle_name, data.last_name, data.birth_date, data.gender,
             data.course, data.year_level, now, now
         )
@@ -460,7 +464,7 @@ async def create_account(
 
 @router.put("/{account_id}", response_model=AccountResponse)
 async def update_account(
-    account_id: int,
+    account_id: str,
     data: AccountUpdate,
     user: dict = Depends(require_admin_or_manager)
 ):
@@ -589,7 +593,7 @@ async def update_account(
 
 @router.delete("/{account_id}", response_model=MessageResponse)
 async def delete_account(
-    account_id: int,
+    account_id: str,
     user: dict = Depends(require_admin_or_manager)
 ):
     """
@@ -642,7 +646,7 @@ async def delete_account(
 
 @router.post("/{account_id}/restore", response_model=MessageResponse)
 async def restore_account(
-    account_id: int,
+    account_id: str,
     user: dict = Depends(require_admin_or_manager)
 ):
     """
@@ -688,7 +692,7 @@ async def restore_account(
 
 @router.delete("/{account_id}/permanent", response_model=MessageResponse)
 async def permanent_delete_account(
-    account_id: int,
+    account_id: str,
     user: dict = Depends(require_admin)
 ):
     """

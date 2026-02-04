@@ -72,7 +72,7 @@ async def create_adjustment(
 
 @router.get("/", response_model=TimeAdjustmentListResponse)
 async def list_adjustments(
-    account_id: int | None = Query(None, description="Filter by student account ID"),
+    account_id: str | None = Query(None, description="Filter by student account ID"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: dict = Depends(get_current_user)

@@ -8,7 +8,7 @@ class ScheduleBase(BaseModel):
 
 class StudentScheduleResponse(BaseModel):
     id: int
-    account_id: int
+    account_id: str
     weekdays: List[int]
     created_at: datetime
     updated_at: datetime
@@ -22,14 +22,14 @@ class ScheduleRequestCreate(ScheduleOverrideBase):
 
 class ScheduleOverrideResponse(BaseModel):
     id: int
-    account_id: int
+    account_id: str
     date: date
     request_notes: str
     response_notes: Optional[str] = None
     approved_at: Optional[datetime] = None
     rejected_at: Optional[datetime] = None
     cancelled_at: Optional[datetime] = None
-    manager_id: Optional[int] = None
+    manager_id: Optional[str] = None
     created_at: datetime
     
     # Computed status for convenience, though frontend can derive
