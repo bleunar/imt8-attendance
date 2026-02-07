@@ -302,7 +302,7 @@ async def get_public_today_activity(
 async def list_activities(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    account_id: Optional[int] = None,
+    account_id: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
     active_only: bool = False,
@@ -430,7 +430,7 @@ async def list_activities(
 
 @router.get("/student/{student_id}", response_model=ActivityListResponse)
 async def get_student_activities(
-    student_id: int,
+    student_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     date_from: Optional[datetime] = None,

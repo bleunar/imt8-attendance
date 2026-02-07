@@ -108,7 +108,7 @@ async def root():
     """Root endpoint - API health check."""
     return {
         "name": "ITSD Attendance API",
-        "version": "1.0.0",
+        "version": "1.3.0",
         "status": "running",
         "environment": settings.ENVIRONMENT
     }

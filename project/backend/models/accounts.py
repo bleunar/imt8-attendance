@@ -82,6 +82,8 @@ class ProfileUpdate(BaseModel):
     department: Optional[str] = None
     course: Optional[str] = None
     year_level: Optional[float] = None
+    email: Optional[EmailStr] = None
+    school_id: Optional[str] = None
 
 
 class PasswordUpdate(BaseModel):

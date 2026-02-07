@@ -158,48 +158,95 @@ async def update_profile(
     
     Users can only update their own basic information.
     """
-    # Build update query
+    
+    # 1. Role-based restrictions
+    if user["role"] == "student":
+        # Students can ONLY update gender and birth_date
+        # We ignore other fields if sent, or we could raise 403.
+        # Given potential frontend confusion, ignoring is often safer, BUT
+        # for security, we should ensure no other fields are processed.
+        
+        # Explicitly clear restricted fields from data for students
+        data.first_name = None
+        data.middle_name = None
+        data.last_name = None
+        data.department = None
+        data.course = None
+        data.year_level = None
+        data.email = None
+        data.school_id = None
+    
+    # 2. Build update query
     updates = []
     params = []
     
-    if data.first_name is not None:
-        updates.append("first_name = %s")
-        params.append(data.first_name)
-    
-    if data.middle_name is not None:
-        updates.append("middle_name = %s")
-        params.append(data.middle_name)
-    
-    if data.last_name is not None:
-        updates.append("last_name = %s")
-        params.append(data.last_name)
-    
-    if data.birth_date is not None:
-        updates.append("birth_date = %s")
-        params.append(data.birth_date)
-    
-
+    # Common fields (allowed for everyone)
     if data.gender is not None:
         updates.append("gender = %s")
         params.append(data.gender)
 
-    if data.department is not None:
-        updates.append("department = %s")
-        params.append(data.department)
+    if data.birth_date is not None:
+        updates.append("birth_date = %s")
+        params.append(data.birth_date)
+        
+    # Admin/Manager fields
+    if user["role"] != "student":
+        if data.first_name is not None and data.first_name.strip():
+            updates.append("first_name = %s")
+            params.append(data.first_name)
+        
+        if data.middle_name is not None:
+            updates.append("middle_name = %s")
+            params.append(data.middle_name)
+        
+        if data.last_name is not None and data.last_name.strip():
+            updates.append("last_name = %s")
+            params.append(data.last_name)
 
-    if data.course is not None:
-        updates.append("course = %s")
-        params.append(data.course)
+        if data.department is not None and data.department.strip():
+            updates.append("department = %s")
+            params.append(data.department)
 
-    if data.year_level is not None:
-        updates.append("year_level = %s")
-        params.append(data.year_level)
+        if data.course is not None and data.course.strip():
+            updates.append("course = %s")
+            params.append(data.course)
+
+        if data.year_level is not None:
+            updates.append("year_level = %s")
+            params.append(data.year_level)
+            
+        if data.email is not None and data.email.strip():
+            # Check uniqueness
+            check = await execute_one(
+                "SELECT id FROM accounts WHERE email = %s AND id != %s",
+                (data.email, user["id"])
+            )
+            if check:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already registered"
+                )
+            updates.append("email = %s")
+            params.append(data.email)
+            
+        if data.school_id is not None and data.school_id.strip():
+            # Check uniqueness
+            check = await execute_one(
+                "SELECT id FROM accounts WHERE school_id = %s AND id != %s",
+                (data.school_id, user["id"])
+            )
+            if check:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="School ID already registered"
+                )
+            updates.append("school_id = %s")
+            params.append(data.school_id)
     
     if not updates:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No fields to update"
-        )
+        # It's possible a student sent only restricted fields, effectively resulting in no updates
+        # In this case we can just return the current profile without error
+        return await get_profile(user)
     
     # Add updated_at
     updates.append("updated_at = %s")

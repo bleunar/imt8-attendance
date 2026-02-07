@@ -280,15 +280,15 @@ export default function LeaderboardsPage() {
                                                                             #{data.rank}
                                                                         </div>
                                                                         <div>
-                                                                            <p className="font-semibold">{data.name}</p>
+                                                                            <p className="font-semibold capitalize">{data.name}</p>
                                                                         </div>
                                                                     </div>
                                                                     <p className="text-sm mt-2">
                                                                         <strong className="text-lg">{data.total_hours_formatted}</strong>
                                                                     </p>
                                                                     {data.job_name && (
-                                                                        <p className="text-xs text-muted-foreground mt-1">
-                                                                            📋 {data.job_name}
+                                                                        <p className="text-xs text-muted-foreground mt-1 capitalize">
+                                                                            {data.job_name}
                                                                         </p>
                                                                     )}
                                                                 </div>

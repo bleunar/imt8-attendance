@@ -104,25 +104,31 @@ export function EditProfileDialog({ open, onOpenChange, onSuccess }: EditProfile
     const onSubmit = async (data: FormData) => {
         setIsLoading(true);
         try {
+            // Helper to sanitize empty strings to undefined
+            const sanitize = <T,>(value: T | string | null | undefined): T | undefined => {
+                if (value === '' || value === null) return undefined;
+                return value as T;
+            };
+
             // For students, only send allowed fields
             let updateData: Partial<User>;
             if (isStudent) {
                 updateData = {
-                    gender: data.gender,
-                    birth_date: data.birth_date,
+                    gender: sanitize(data.gender),
+                    birth_date: sanitize(data.birth_date),
                 };
             } else {
                 updateData = {
-                    first_name: data.first_name,
-                    middle_name: data.middle_name,
-                    last_name: data.last_name,
-                    email: data.email,
-                    school_id: data.school_id,
-                    department: data.department,
-                    course: data.course,
-                    year_level: data.year_level,
-                    gender: data.gender,
-                    birth_date: data.birth_date,
+                    first_name: sanitize(data.first_name),
+                    middle_name: sanitize(data.middle_name),
+                    last_name: sanitize(data.last_name),
+                    email: sanitize(data.email),
+                    school_id: sanitize(data.school_id),
+                    department: sanitize(data.department),
+                    course: sanitize(data.course),
+                    year_level: data.year_level, // year_level is managed by Select/setValue as number
+                    gender: sanitize(data.gender),
+                    birth_date: sanitize(data.birth_date),
                 };
             }
 
@@ -132,6 +138,7 @@ export function EditProfileDialog({ open, onOpenChange, onSuccess }: EditProfile
             onOpenChange(false);
             onSuccess?.();
         } catch (error: any) {
+            console.error('Profile update error:', error);
             toast.error(error.response?.data?.detail || 'Failed to update profile');
         } finally {
             setIsLoading(false);

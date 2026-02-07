@@ -17,6 +17,7 @@ from core.auth import (
     verify_refresh_token, set_refresh_cookie, clear_refresh_cookie
 )
 from core.security import verify_password, hash_password, generate_otp
+from core.logging import get_logger
 from utilities.database import execute_one, execute_update
 from utilities.email import EmailService
 from utilities.dependencies import get_current_user
@@ -27,6 +28,7 @@ from utilities.otp import get_otp_service
 from utilities.limiter import limiter
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+logger = get_logger(__name__)
 
 # Get OTP Service
 otp_service = get_otp_service()
@@ -180,15 +182,22 @@ async def request_recovery(request: Request, data: RecoveryRequest):
     
     # Always return success to prevent email enumeration
     if not user:
+        logger.info(f"OTP request for non-existent email: {data.email}")
         return MessageResponse(
             message="If the email exists, a recovery OTP has been sent."
         )
     
+    # Check if valid OTP already exists
+    existing_otp = otp_service.get_otp(data.email)
+    if existing_otp:
+        logger.info(f"Valid OTP already exists for {data.email}. Overwriting with new OTP.")
+
     # Generate OTP
     otp = generate_otp(6)
     
     # Store OTP with 10 minute expiration
     otp_service.set_otp(data.email, otp, expiry_seconds=600)
+    logger.info(f"OTP generated for {data.email}")
     
     # Get user name
     name = user.get("first_name") or "User"
@@ -196,11 +205,16 @@ async def request_recovery(request: Request, data: RecoveryRequest):
         name = f"{name} {user['last_name']}"
     
     # Send recovery email
-    await EmailService.send_recovery_email(
+    sent = await EmailService.send_recovery_email(
         to=data.email,
         otp=otp,
         name=name
     )
+    
+    if sent:
+        logger.info(f"OTP sent to {data.email}")
+    else:
+        logger.error(f"Failed to send OTP to {data.email}")
     
     return MessageResponse(
         message="If the email exists, a recovery OTP has been sent."

@@ -114,6 +114,5 @@ CREATE TABLE job_certificate (
     account_id BIGINT UNSIGNED NOT NULL,
     duty_hours INT NOT NULL,
     school_year VARCHAR NOT NULL,
-    semester VARCHAR NOT NULL,
-    managers JSON NOT NULL, -- list of the manager's account_id, name, and specialization. e.g.[{`id`: `123456`, `name`: `Jaymar Dingcong`, specialization: `IT Specialist`}, ]
+    semester VARCHAR NOT NULL
 );
