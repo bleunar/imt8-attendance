@@ -173,7 +173,7 @@ export default function LoginPage() {
                                 rel="noreferrer"
                                 className="hover:underline"
                             >
-                                Toni Ross Arabit
+                                Tonyo Arabit
                             </a>
                         </div>
                     </div>

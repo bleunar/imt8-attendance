@@ -43,16 +43,16 @@ services:
       volumes:
         - uploads:/usr/share/nginx/html/uploads
 
-networks:
-  itm8_attendance:
-    name: itm8_attendance
-    driver: bridge
-  itm8_db:
-    name: itm8_db
-    external: true
-
 volumes:
   uploads:
     name: itm8_attendance_uploads
   redis_data:
     name: itm8_attendance_redis_data
+
+networks:
+  itm8_attendance:
+    name: itm8_attendance
+    driver: bridge
+  itm8_db:
+    name: db
+    external: true

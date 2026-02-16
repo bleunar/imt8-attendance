@@ -26,11 +26,8 @@ import {
 import { SelfChangePasswordDialog } from '@/pages/dashboard/accounts/SelfChangePasswordDialog';
 
 interface UserProfileProps {
-    /** User data to display (for preview mode) */
     user?: User | null;
-    /** 'preview' for read-only, 'profile' for editable */
     mode: 'preview' | 'profile';
-    /** Callback when profile is updated (profile mode only) */
     onUpdate?: () => void;
 }
 

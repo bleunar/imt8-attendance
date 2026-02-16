@@ -15,7 +15,7 @@ import {
 import { MoreHorizontal, User as UserIcon, Pencil, Key, Briefcase, RefreshCw, Ban, Trash2, ImageOff } from "lucide-react"
 import type { User } from "@/types"
 
-interface GetColumnsProps {
+type GetColumnsProps = {
     onViewProfile: (user: User) => void
     onEdit: (user: User) => void
     onPassword: (user: User) => void

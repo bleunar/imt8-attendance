@@ -10,7 +10,7 @@ import {
     InputOTPSlot,
 } from "@/components/ui/input-otp"
 
-interface PasswordRecoveryDialogProps {
+type PasswordRecoveryDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
